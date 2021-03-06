@@ -428,13 +428,6 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     //self.E[k+kE] += self.sigma*self.tmpx.sum()
     m_E[k+kE] += m_sigma * sum(m_tmpx);
 
-    std::vector<double> arr;
-    arr.resize(20, 0.0);
-    CubeT<std::vector<double>> t0(4, 64, 64, arr);
-    GridT<std::vector<double>> t1 = t0[0];
-    VecT<std::vector<double>> t2 = t1[0];
-    std::vector<double>& v = t2[0];
-    std::vector<double>& u = t0[0][0][0];
 /*
     //self.image_compose(self.I1, self.phiinvx, self.phiinvy, self.I)
     image_compose_2d(m_I1.get(), m_phiinvx, m_phiinvy, m_I.get());

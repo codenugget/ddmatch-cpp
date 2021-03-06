@@ -9,6 +9,8 @@
 
 #include "DiffeoFunctionMatching.h"
 
+#include "core/MyArrays.h"
+
 using ImageLib::TImage;
 
 void run_and_save_example(TImage<double>* I0, TImage<double>* I1, const std::string& subpath, const std::string& desc)
