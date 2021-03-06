@@ -1,0 +1,6 @@
+High:
+[ ] Replace usage of dImage with vec<vec<double>> in DiffeoFunctionMatching
+[ ] Replace usage of dImage with vec<vec<double>> in Diffeo_functions
+
+Notes (low):
+[ ] Wrap vec<vec<double>> to something else for efficiency?

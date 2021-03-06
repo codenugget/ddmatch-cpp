@@ -8,6 +8,78 @@
 
 using ImageLib::dImage;
 
+template<typename T>
+class VecT {
+public:
+  VecT(int cols, T val) : m_cols(cols) {
+    m_array.resize(cols, val);
+  }
+  VecT(int cols, T* ptr) : m_cols(cols), m_ptr(ptr) {
+  }
+
+  T& operator[](int i) {
+    assert(i >= 0);
+    assert(i < m_cols);
+    T *p = m_ptr ? m_ptr : m_array.data();
+    return p[i];
+  }
+
+private:
+  int m_cols = 0;
+  T* m_ptr = nullptr;
+  std::vector<T> m_array;
+};
+
+template<typename T>
+class GridT {
+public:
+  GridT(int rows, int cols, T val) : m_rows(rows), m_cols(cols) {
+    m_array.resize(rows*cols, val);
+  }
+  GridT(int rows, int cols, T* ptr) : m_rows(rows), m_cols(cols), m_ptr(ptr) {
+  }
+
+  VecT<T> operator[](int i) {
+    assert(i >= 0);
+    assert(i < m_rows);
+    T *p = m_ptr ? m_ptr : m_array.data();
+    return VecT<T>(m_cols, &p[i * m_cols]);
+  }
+
+private:
+  int m_rows = 0;
+  int m_cols = 0;
+  T* m_ptr = nullptr;
+  std::vector<T> m_array;
+};
+
+template<typename T>
+class CubeT {
+public:
+  CubeT(int depths, int rows, int cols, T val) : m_depths(depths), m_rows(rows), m_cols(cols) {
+    m_array.resize(depths*rows*cols, val);
+  }
+  CubeT(int depths, int rows, int cols, T* ptr) : m_depths(depths), m_rows(rows), m_cols(cols), m_ptr(ptr) {
+  }
+
+  GridT<T> operator[](int depth) {
+    assert(depth >= 0);
+    assert(depth < m_depths);
+    T *p = m_ptr ? m_ptr : m_array.data();
+    return GridT<T>(m_rows, m_cols, &p[depth*m_rows*m_cols]);
+  }
+
+private:
+  int m_depths = 0;
+  int m_rows = 0;
+  int m_cols = 0;
+  T* m_ptr = nullptr;
+  std::vector<T> m_array;
+};
+
+typedef GridT<double> dGrid;
+typedef CubeT<double> dCube;
+
 typedef std::unique_ptr<ImageLib::dImage> ImgPtr;
 typedef std::vector<double> VecDbl;
 typedef std::vector<VecDbl> GridDbl;
@@ -38,6 +110,11 @@ public:
     double alpha, double beta, double sigma,
     bool compute_phi);
 
+  // niter=300, epsilon=0.1
+  // niter   - Number of iterations to take.
+  // epsilon - The stepsize in the gradient descent method.
+  void run(int niter, double epsilon);
+
 private:
   DiffeoFunctionMatching(const dImage* source, dImage* target,
     double alpha, double beta, double sigma,
@@ -57,6 +134,8 @@ private:
   bool m_compute_phi;
 
   int m_s = 0; // TODO: fix width, height
+
+  VecDbl m_E;
 
   ImgPtr m_I0;
   ImgPtr m_I1;

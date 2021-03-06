@@ -82,6 +82,15 @@ namespace ImageLib
   template<typename T>
   std::unique_ptr<TImage<T>> ones_like(const TImage<T>* in) { return values_like<T>(in, T(1)); }
 
+  template<typename T>
+  bool copyto(TImage<T>* dst, const TImage<T>* src) {
+    if (!dst or !src or !dst->is_same_shape(*src))
+      return false;
+    memcpy(dst->data(), src->data(), src->count_bytes());
+    return true;
+  }
+
+
   inline std::unique_ptr<TImage<double>> convert_rgb_to_ycbcr_dbl(const uint32_t w, const uint32_t h, const uint32_t c, const uint8_t* data)
   {
     std::unique_ptr<TImage<double>> ret = std::make_unique<TImage<double>>(w, h, 3);
