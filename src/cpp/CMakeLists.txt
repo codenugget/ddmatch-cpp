@@ -1,2 +1,4 @@
 add_subdirectory(apps)
+add_subdirectory(core)
 add_subdirectory(ddmatch)
+add_subdirectory(image)

@@ -1,6 +1,11 @@
 project(example)
 
 set(src
+    DiffeoFunctionMatching.cpp
+    DiffeoFunctionMatching.h
+    Diffeo_functions.cpp
+    Diffeo_functions.h
+    impl.cpp
     main.cpp
 )
 
