@@ -3,9 +3,6 @@
 
 #include "DiffeoFunctionMatching.h"
 #include "Diffeo_functions.h"
-#include "image/Image_funcs.h"
-
-using ImageLib::dImage;
 
 template<typename T>
 std::vector<T> my_linspace(T start, T stop, int num, bool endpoint) {
@@ -86,8 +83,6 @@ std::tuple<std::unique_ptr<DiffeoFunctionMatching>, std::string> DiffeoFunctionM
 }
 
 void DiffeoFunctionMatching::setup() {
-  using ImageLib::zeros_like;
-  using ImageLib::ones_like;
   dGrid& I0 = m_target;
   const dGrid& I1 = m_source;
 
@@ -277,60 +272,6 @@ void DiffeoFunctionMatching::setup() {
     m_Linv = elem_func(m_multipliers, inv_f);
   }
 }
-
-/*bool copyto(GridDbl& dst, dImage* I) {
-  int h = dst.size();
-  if (h == 0)
-    return false;
-  int w = dst[0].size();
-  if (!I or I->height() != h or I->width() != w)
-    return false;
-
-  double* v = I->data();
-  for(int i = 0; i < h; ++i)
-    memcpy(dst[i].data(), v, w * sizeof(double));
-  return true;
-}
-
-double sum(const GridDbl& vals) {
-  double s = 0;
-  for(const auto& row : vals) {
-    for(const auto v : row)
-      s += v;
-  }
-  return s;
-}
-
-void set_zero(GridDbl& vals) {
-  for(auto& row : vals) {
-    for(auto& v : row)
-      v = 0;
-  }
-}
-
-  template<typename Pred>
-  bool elem_set(GridDbl& res, const dImage* a, const dImage* b, Pred f) {
-    int w = a->width();
-    int h = a->height();
-    for(int y = 0; y < h; ++y) {
-      for(int x = 0; x < w; ++x) {
-        res[y][x] = f(a->get(x,y,0), b->get(x,y,0));
-      }
-    }
-    return true;
-  }
-  template<typename Pred>
-  bool elem_add(GridDbl& res, const dImage* a, const dImage* b, Pred f) {
-    int w = a->width();
-    int h = a->height();
-    for(int y = 0; y < h; ++y) {
-      for(int x = 0; x < w; ++x) {
-        res[y][x] += f(a->get(x,y,0), b->get(x,y,0));
-      }
-    }
-    return true;
-  }
-*/
 
 void DiffeoFunctionMatching::run(int niter, double epsilon) {
   // Carry out the matching process.

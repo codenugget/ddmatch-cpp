@@ -126,17 +126,6 @@ def run_and_save_example(I0, I1, subpath, description):
 */
 
 
-dGrid create_TGrid(ImageLib::dImage* img) {
-  dGrid ret(img->height(), img->width(), 0.0);
-
-  for(int y = 0; y < img->height(); ++y) {
-    for(int x = 0; x < img->width(); ++x) {
-      ret[y][x] = img->get(x, y, 0);
-    }
-  }
-  return ret;
-}
-
 void test1() {
   //std::random rnd;
   //std::mt19937_64 gen(rnd());
@@ -149,8 +138,6 @@ void test1() {
   "small squares or circles could be used.";
   int nPoints = 30;
   int delta = 20;
-  auto orig_I0 = ImageLib::create_filled_image<double>(64, 64, 1, 0);
-  auto orig_I1 = ImageLib::create_filled_image<double>(64, 64, 1, 0);
   dGrid I0(64,64,0.0);
   dGrid I1(64,64,0.0);
 

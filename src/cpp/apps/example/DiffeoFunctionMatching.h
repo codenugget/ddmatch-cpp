@@ -5,19 +5,15 @@
 #include <tuple>
 
 #include "core/MyArrays.h"
-//#include "image/Image.h"
 
-//using ImageLib::dImage;
-
-//typedef std::unique_ptr<ImageLib::dImage> ImgPtr;
 typedef std::vector<double> VecDbl;
-//typedef std::vector<VecDbl> GridDbl;
 typedef std::vector<dGrid> VecImg;
 typedef std::vector<VecImg> GridImg;
 typedef std::vector<GridImg> CubeImg;
 
 typedef std::vector<int> VecInt;
 typedef std::vector<VecInt> GridInt;
+
 // Implements to algorithm in the paper by Modin and Karlsson (to be published).
 class DiffeoFunctionMatching final {
 public:
