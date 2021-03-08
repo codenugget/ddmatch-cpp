@@ -8,9 +8,9 @@
 using ImageLib::dImage;
 
 // for now I assume they a and b are of the same shape
-GridDbl operator+(const GridDbl &a, const GridDbl &b) {
+/*dGrid operator+(const dGrid &a, const dGrid &b) {
   int rows = (int) a.size();
-  GridDbl ret(rows);
+  dGrid ret(rows);
   for(int i = 0; i < rows; ++i) {
     int cols = (int) a[i].size();
     ret[i].resize(cols);
@@ -55,7 +55,7 @@ GridDbl elem_func(const GridDbl& g, Predicate f) {
     }
   }
   return ret;
-}
+}*/
 
 template<typename T>
 std::vector<T> my_linspace(T start, T stop, int num, bool endpoint) {
@@ -75,7 +75,7 @@ enum class Indexing {
   xy,
   ij
 };
-std::tuple<std::vector<std::vector<double>>,std::vector<std::vector<double>>> my_meshgrid(
+std::tuple<dGrid,dGrid> my_meshgrid(
   const std::vector<double>& x,
   const std::vector<double>& y,
   Indexing i = Indexing::xy) {
@@ -83,13 +83,8 @@ std::tuple<std::vector<std::vector<double>>,std::vector<std::vector<double>>> my
     case Indexing::xy: {
       int nx = (int)x.size();
       int ny = (int)y.size();
-      std::vector<std::vector<double>> xx(ny);
-      std::vector<std::vector<double>> yy(ny);
-
-      for(auto& xi : xx)
-        xi.resize(nx);
-      for(auto& yi : yy)
-        yi.resize(nx);
+      dGrid xx(ny, nx, 0.0);
+      dGrid yy(ny, nx, 0.0);
 
       for(int iy = 0; iy < ny; ++iy) {
         for(int ix = 0; ix < nx; ++ix) {
@@ -103,13 +98,8 @@ std::tuple<std::vector<std::vector<double>>,std::vector<std::vector<double>>> my
       // TODO: verify this case
       int nx = (int)x.size();
       int ny = (int)y.size();
-      std::vector<std::vector<double>> xx(ny);
-      std::vector<std::vector<double>> yy(ny);
-
-      for(auto& xi : xx)
-        xi.resize(nx);
-      for(auto& yi : yy)
-        yi.resize(nx);
+      dGrid xx(ny, nx, 0.0);
+      dGrid yy(ny, nx, 0.0);
 
       for(int iy = 0; iy < ny; ++iy) {
         for(int ix = 0; ix < nx; ++ix) {
@@ -117,19 +107,27 @@ std::tuple<std::vector<std::vector<double>>,std::vector<std::vector<double>>> my
           yy[iy][ix] = x[iy];
         }
       }
-      return std::make_tuple(xx, yy);      return std::make_tuple(std::vector<std::vector<double>>{}, std::vector<std::vector<double>>{});
+      return std::make_tuple(xx, yy);
     }
     default: {
       // unknown / unsupported case
-      return std::make_tuple(std::vector<std::vector<double>>{}, std::vector<std::vector<double>>{});
+      return std::make_tuple(dGrid{}, dGrid{});
     }
   }
 }
 
+int apa() {
+  return 42;
+}
+
 std::tuple<std::unique_ptr<DiffeoFunctionMatching>, std::string> DiffeoFunctionMatching::create(
-  const dImage* source, dImage* target,
-  double alpha, double beta, double sigma,
-  bool compute_phi) {
+    const dGrid* source, dGrid* target,
+    double alpha, double beta, double sigma,
+    bool compute_phi) {
+//std::tuple<std::unique_ptr<DiffeoFunctionMatching>, std::string> DiffeoFunctionMatching::create(
+//  const dGrid* source, dGrid* target,
+//  double alpha, double beta, double sigma,
+//  bool compute_phi) {
   // Check input
   if (!source || !target)
     return std::make_tuple(nullptr, "source or target are nullptr");
@@ -139,7 +137,7 @@ std::tuple<std::unique_ptr<DiffeoFunctionMatching>, std::string> DiffeoFunctionM
   if (sigma < 0)
     return std::make_tuple(nullptr, "Paramter sigma must be positive");
 
-  if (source->width() != source->height())
+  if (source->rows() != source->cols())
     return std::make_tuple(nullptr, "Only square images allowed so far.");
 
   auto ret = std::unique_ptr<DiffeoFunctionMatching>(new DiffeoFunctionMatching(source, target, alpha, beta, sigma, compute_phi));
@@ -150,8 +148,8 @@ std::tuple<std::unique_ptr<DiffeoFunctionMatching>, std::string> DiffeoFunctionM
 void DiffeoFunctionMatching::setup() {
   using ImageLib::zeros_like;
   using ImageLib::ones_like;
-  dImage* I0 = m_target;
-  const dImage* I1 = m_source;
+  dGrid* I0 = m_target;
+  const dGrid* I1 = m_source;
 
   // Create optimized algorithm functions
   //self.image_compose = image_compose_2d;//generate_optimized_image_composition(I1)
@@ -162,30 +160,30 @@ void DiffeoFunctionMatching::setup() {
   //self.evaluate = eval_diffeo_2d;//generate_optimized_diffeo_evaluation(I1)
 
   // Allocate and initialize variables
-  m_s = I1->width();
+  m_s = I1->cols();
   //E = []
   m_E.resize(0);
 
   //self.I0 = np.zeros_like(I0)
   //np.copyto(self.I0,I0)
-  m_I0 = I0->clone();
+  m_I0 = *I0;
   //self.I1 = np.zeros_like(I1)
   //np.copyto(self.I1,I1)
-  m_I1 = I1->clone();
+  m_I1 = *I1;
   //self.I = np.zeros_like(I1)
   //np.copyto(self.I,I1)
-  m_I = I1->clone();
+  m_I = *I1;
 
   //self.dIdx = np.zeros_like(I1)
   //self.dIdy = np.zeros_like(I1)
   //self.vx = np.zeros_like(I1)
   //self.vy = np.zeros_like(I1)
   //self.divv = np.zeros_like(I1)
-  m_dIdx = zeros_like(I1);
-  m_dIdy = zeros_like(I1);
-  m_vx = zeros_like(I1);
-  m_vy = zeros_like(I1);
-  m_divv = zeros_like(I1);
+  m_dIdx = zeros_like(*I1);
+  m_dIdy = zeros_like(*I1);
+  m_vx = zeros_like(*I1);
+  m_vy = zeros_like(*I1);
+  m_divv = zeros_like(*I1);
 
   // Allocate and initialize the diffeos
   //x = np.linspace(0, self.s, self.s, endpoint=False)
@@ -225,17 +223,17 @@ void DiffeoFunctionMatching::setup() {
   // Allocate and initialize the metrics
   m_g.resize(2);
   //self.g = np.array([[np.ones_like(I1),np.zeros_like(I1)],[np.zeros_like(I1),np.ones_like(I1)]])
-  m_g[0].emplace_back(ones_like(I1));
-  m_g[0].emplace_back(zeros_like(I1));
-  m_g[1].emplace_back(zeros_like(I1));
-  m_g[1].emplace_back(ones_like(I1));
+  m_g[0].emplace_back(ones_like(*I1));
+  m_g[0].emplace_back(zeros_like(*I1));
+  m_g[1].emplace_back(zeros_like(*I1));
+  m_g[1].emplace_back(ones_like(*I1));
 
   m_h.resize(2);
   //self.h = np.array([[np.ones_like(I1),np.zeros_like(I1)],[np.zeros_like(I1),np.ones_like(I1)]])
-  m_h[0].emplace_back(zeros_like(I1));
-  m_h[0].emplace_back(zeros_like(I1));
-  m_h[1].emplace_back(zeros_like(I1));
-  m_h[1].emplace_back(zeros_like(I1));
+  m_h[0].emplace_back(zeros_like(*I1));
+  m_h[0].emplace_back(zeros_like(*I1));
+  m_h[1].emplace_back(zeros_like(*I1));
+  m_h[1].emplace_back(zeros_like(*I1));
 
   //self.hdet = np.zeros_like(I1)
   //self.dhaadx = np.zeros_like(I1)
@@ -250,40 +248,40 @@ void DiffeoFunctionMatching::setup() {
   //self.yddx = np.zeros_like(I1)
   //self.xddy = np.zeros_like(I1)
   //self.xddx = np.zeros_like(I1)
-  m_hdet = zeros_like(I1);
-  m_dhaadx = zeros_like(I1);
-  m_dhbadx = zeros_like(I1);
-  m_dhabdx = zeros_like(I1);
-  m_dhbbdx = zeros_like(I1);
-  m_dhaady = zeros_like(I1);
-  m_dhbady = zeros_like(I1);
-  m_dhabdy = zeros_like(I1);
-  m_dhbbdy = zeros_like(I1);
-  m_yddy = zeros_like(I1);
-  m_yddx = zeros_like(I1);
-  m_xddy = zeros_like(I1);
-  m_xddx = zeros_like(I1);
+  m_hdet = zeros_like(*I1);
+  m_dhaadx = zeros_like(*I1);
+  m_dhbadx = zeros_like(*I1);
+  m_dhabdx = zeros_like(*I1);
+  m_dhbbdx = zeros_like(*I1);
+  m_dhaady = zeros_like(*I1);
+  m_dhbady = zeros_like(*I1);
+  m_dhabdy = zeros_like(*I1);
+  m_dhbbdy = zeros_like(*I1);
+  m_yddy = zeros_like(*I1);
+  m_yddx = zeros_like(*I1);
+  m_xddy = zeros_like(*I1);
+  m_xddx = zeros_like(*I1);
 
   // self.G = np.zeros_like(np.array([self.g,self.g]))
   m_G.resize(2);
   m_G[0].resize(2);
-  m_G[0][0].emplace_back(zeros_like(I1));
-  m_G[0][0].emplace_back(zeros_like(I1));
-  m_G[0][1].emplace_back(zeros_like(I1));
-  m_G[0][1].emplace_back(zeros_like(I1));
+  m_G[0][0].emplace_back(zeros_like(*I1));
+  m_G[0][0].emplace_back(zeros_like(*I1));
+  m_G[0][1].emplace_back(zeros_like(*I1));
+  m_G[0][1].emplace_back(zeros_like(*I1));
   m_G[1].resize(2);
-  m_G[1][0].emplace_back(zeros_like(I1));
-  m_G[1][0].emplace_back(zeros_like(I1));
-  m_G[1][1].emplace_back(zeros_like(I1));
-  m_G[1][1].emplace_back(zeros_like(I1));
+  m_G[1][0].emplace_back(zeros_like(*I1));
+  m_G[1][0].emplace_back(zeros_like(*I1));
+  m_G[1][1].emplace_back(zeros_like(*I1));
+  m_G[1][1].emplace_back(zeros_like(*I1));
 
   //self.Jmap = np.zeros_like(np.array([I1,I1]))
-  m_Jmap.emplace_back(zeros_like(I1));
-  m_Jmap.emplace_back(zeros_like(I1));
+  m_Jmap.emplace_back(zeros_like(*I1));
+  m_Jmap.emplace_back(zeros_like(*I1));
 
   // Create wavenumber vectors
   //k = [np.hstack((np.arange(n//2),np.arange(-n//2,0))) for n in self.I0.shape]
-  GridDbl k;
+  dGrid k(2, I1->rows(), 0.0);
 
   auto to_double = [](const VecInt& v) -> VecDbl {
     VecDbl ret;
@@ -293,17 +291,17 @@ void DiffeoFunctionMatching::setup() {
     return ret;
   };
 
-  k.resize(2);
-  auto v1 = to_double(my_linspace<int>(0, I1->width(), I1->width(), false));
-  k.emplace_back(v1);
-  auto v2 = to_double(my_linspace<int>(-I1->width(), 0, I1->width(), false));
-  k.emplace_back(v2);
+  //k.resize(2);
+  auto v1 = to_double(my_linspace<int>(0, I1->cols(), I1->rows(), false));
+  copyto(k[0], v1);
+  auto v2 = to_double(my_linspace<int>(-I1->cols(), 0, I1->rows(), false));
+  copyto(k[1], v2);
 
   /* not completed yet
   # Create wavenumber tensors
   K = np.meshgrid(*k, sparse=False, indexing='ij')
   */
-  GridDbl Kx, Ky;
+  dGrid Kx, Ky;
   std::tie(Kx, Ky) = my_meshgrid(v1, v2, Indexing::ij);
 
   // Create Fourier multiplicator
@@ -340,7 +338,7 @@ void DiffeoFunctionMatching::setup() {
   }
 }
 
-bool copyto(GridDbl& dst, dImage* I) {
+/*bool copyto(GridDbl& dst, dImage* I) {
   int h = dst.size();
   if (h == 0)
     return false;
@@ -392,6 +390,7 @@ void set_zero(GridDbl& vals) {
     }
     return true;
   }
+*/
 
 void DiffeoFunctionMatching::run(int niter, double epsilon) {
   // Carry out the matching process.
@@ -404,8 +403,8 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     // OUTPUT
     //np.copyto(self.tmpx, self.I)
     //np.copyto(self.tmpy, self.I0)
-    copyto(m_tmpx, m_I.get());
-    copyto(m_tmpy, m_I0.get());
+    copyto(m_tmpx, m_I);
+    copyto(m_tmpy, m_I0);
 
     //self.tmpx = self.tmpx-self.tmpy
     //self.tmpx **= 2
@@ -420,10 +419,10 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
       double v = (v1-v2);
       return v*v;
     };
-    elem_set(m_tmpx, m_h[0][0].get(), m_g[0][0].get(), diff_sq);
-    elem_add(m_tmpx, m_h[1][0].get(), m_g[1][0].get(), diff_sq);
-    elem_add(m_tmpx, m_h[0][1].get(), m_g[0][1].get(), diff_sq);
-    elem_add(m_tmpx, m_h[1][1].get(), m_g[1][1].get(), diff_sq);
+    elem_set(m_tmpx, m_h[0][0], m_g[0][0], diff_sq);
+    elem_add(m_tmpx, m_h[1][0], m_g[1][0], diff_sq);
+    elem_add(m_tmpx, m_h[0][1], m_g[0][1], diff_sq);
+    elem_add(m_tmpx, m_h[1][1], m_g[1][1], diff_sq);
 
     //self.E[k+kE] += self.sigma*self.tmpx.sum()
     m_E[k+kE] += m_sigma * sum(m_tmpx);

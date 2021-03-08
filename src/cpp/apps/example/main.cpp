@@ -13,7 +13,7 @@
 
 using ImageLib::TImage;
 
-void run_and_save_example(TImage<double>* I0, TImage<double>* I1, const std::string& subpath, const std::string& desc)
+void run_and_save_example(dGrid& I0, dGrid& I1, const std::string& subpath, const std::string& desc)
 {
   printf("%s Initializing\n", subpath.c_str());
 
@@ -22,7 +22,7 @@ void run_and_save_example(TImage<double>* I0, TImage<double>* I1, const std::str
   bool compute_phi = true;
   std::unique_ptr<DiffeoFunctionMatching> dfm;
   std::string msg;
-  std::tie(dfm, msg) = DiffeoFunctionMatching::create(I0, I1, 0.1, 0.1, 0.1, compute_phi);
+  std::tie(dfm, msg) = DiffeoFunctionMatching::create(&I0, &I1, 0.1, 0.1, 0.1, compute_phi);
 
   /*
   dm = difforma_base.DiffeoFunctionMatching(
@@ -128,6 +128,17 @@ def run_and_save_example(I0, I1, subpath, description):
 */
 
 
+dGrid create_TGrid(ImageLib::dImage* img) {
+  dGrid ret(img->height(), img->width(), 0.0);
+
+  for(int y = 0; y < img->height(); ++y) {
+    for(int x = 0; x < img->width(); ++x) {
+      ret[y][x] = img->get(x, y, 0);
+    }
+  }
+  return ret;
+}
+
 void test1() {
   //std::random rnd;
   //std::mt19937_64 gen(rnd());
@@ -140,8 +151,10 @@ void test1() {
   "small squares or circles could be used.";
   int nPoints = 30;
   int delta = 20;
-  auto I0 = ImageLib::create_filled_image<double>(64, 64, 1, 0);
-  auto I1 = ImageLib::create_filled_image<double>(64, 64, 1, 0);
+  auto orig_I0 = ImageLib::create_filled_image<double>(64, 64, 1, 0);
+  auto orig_I1 = ImageLib::create_filled_image<double>(64, 64, 1, 0);
+  dGrid I0(64,64,0.0);
+  dGrid I1(64,64,0.0);
 
   std::uniform_int_distribution dis(5, 25);
 
@@ -149,12 +162,12 @@ void test1() {
   {
     int px = dis(gen);
     int py = dis(gen);
-    I0->set(px, py, 0, 1);
-    I1->set(px + delta, py + delta, 0, 1);
+    I0[py][px] = 1.0;
+    I1[py+delta][px+delta] = 1.0;
   }
 
   std::string path = "translation/low_density";
-  run_and_save_example(I0.get(), I1.get(), path, description);
+  run_and_save_example(I0, I1, path, description);
 }
 
 int main(int argc, char** argv)

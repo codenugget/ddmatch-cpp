@@ -5,14 +5,14 @@
 #include <tuple>
 
 #include "core/MyArrays.h"
-#include "image/Image.h"
+//#include "image/Image.h"
 
-using ImageLib::dImage;
+//using ImageLib::dImage;
 
-typedef std::unique_ptr<ImageLib::dImage> ImgPtr;
+//typedef std::unique_ptr<ImageLib::dImage> ImgPtr;
 typedef std::vector<double> VecDbl;
-typedef std::vector<VecDbl> GridDbl;
-typedef std::vector<ImgPtr> VecImg;
+//typedef std::vector<VecDbl> GridDbl;
+typedef std::vector<dGrid> VecImg;
 typedef std::vector<VecImg> GridImg;
 typedef std::vector<GridImg> CubeImg;
 
@@ -35,7 +35,7 @@ public:
   // null for invalid input or object
   // second in tuple is a message (usually descriptive error state)
   static std::tuple<std::unique_ptr<DiffeoFunctionMatching>, std::string> create(
-    const dImage* source, dImage* target,
+    const dGrid* source, dGrid* target,
     double alpha, double beta, double sigma,
     bool compute_phi);
 
@@ -45,7 +45,7 @@ public:
   void run(int niter, double epsilon);
 
 private:
-  DiffeoFunctionMatching(const dImage* source, dImage* target,
+  DiffeoFunctionMatching(const dGrid* source, dGrid* target,
     double alpha, double beta, double sigma,
     bool compute_phi) :
     m_source(source), m_target(target), m_alpha(alpha), m_beta(beta), m_sigma(sigma),
@@ -55,8 +55,8 @@ private:
 
   void setup();
 
-  const dImage* m_source;
-  dImage* m_target;
+  const dGrid* m_source;
+  dGrid* m_target;
   double m_alpha;
   double m_beta;
   double m_sigma;
@@ -66,53 +66,52 @@ private:
 
   VecDbl m_E;
 
-  //dGrid m_I0;
-  ImgPtr m_I0;
-  ImgPtr m_I1;
-  ImgPtr m_I;
+  dGrid m_I0;
+  dGrid m_I1;
+  dGrid m_I;
 
-  ImgPtr m_dIdx;
-  ImgPtr m_dIdy;
-  ImgPtr m_vx;
-  ImgPtr m_vy;
-  ImgPtr m_divv;
+  dGrid m_dIdx;
+  dGrid m_dIdy;
+  dGrid m_vx;
+  dGrid m_vy;
+  dGrid m_divv;
 
-  GridDbl m_idx;
-  GridDbl m_idy;
-  GridDbl m_phiinvx;
-  GridDbl m_phiinvy;
-  GridDbl m_psiinvx;
-  GridDbl m_psiinvy;
+  dGrid m_idx;
+  dGrid m_idy;
+  dGrid m_phiinvx;
+  dGrid m_phiinvy;
+  dGrid m_psiinvx;
+  dGrid m_psiinvy;
 
-  GridDbl m_phix;
-  GridDbl m_phiy;
-  GridDbl m_psix;
-  GridDbl m_psiy;
+  dGrid m_phix;
+  dGrid m_phiy;
+  dGrid m_psix;
+  dGrid m_psiy;
 
-  GridDbl m_tmpx;
-  GridDbl m_tmpy;
+  dGrid m_tmpx;
+  dGrid m_tmpy;
 
   GridImg m_g;
   GridImg m_h;
 
-  ImgPtr m_hdet;
-  ImgPtr m_dhaadx;
-  ImgPtr m_dhbadx;
-  ImgPtr m_dhabdx;
-  ImgPtr m_dhbbdx;
-  ImgPtr m_dhaady;
-  ImgPtr m_dhbady;
-  ImgPtr m_dhabdy;
-  ImgPtr m_dhbbdy;
+  dGrid m_hdet;
+  dGrid m_dhaadx;
+  dGrid m_dhbadx;
+  dGrid m_dhabdx;
+  dGrid m_dhbbdx;
+  dGrid m_dhaady;
+  dGrid m_dhbady;
+  dGrid m_dhabdy;
+  dGrid m_dhbbdy;
 
-  ImgPtr m_yddy;
-  ImgPtr m_yddx;
-  ImgPtr m_xddy;
-  ImgPtr m_xddx;
+  dGrid m_yddy;
+  dGrid m_yddx;
+  dGrid m_xddy;
+  dGrid m_xddx;
 
   CubeImg m_G;
   VecImg m_Jmap;
 
-  GridDbl m_multipliers;
-  GridDbl m_Linv;
+  dGrid m_multipliers;
+  dGrid m_Linv;
 };
