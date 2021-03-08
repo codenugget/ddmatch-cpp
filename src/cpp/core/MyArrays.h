@@ -272,7 +272,7 @@ typedef TCube<float> fCube;
 typedef TCube<int> iCube;
 
 
-
+// double check how methods below should behave for arbitrary shapes
 template<typename T>
 TGrid<T> values_like(const TGrid<T>& in, const T fill_value)
 {

@@ -17,12 +17,10 @@ void run_and_save_example(dGrid& I0, dGrid& I1, const std::string& subpath, cons
 {
   printf("%s Initializing\n", subpath.c_str());
 
-  DiffeoFunctionMatching::create(nullptr, nullptr, 0, 0, 0, false);
-
   bool compute_phi = true;
   std::unique_ptr<DiffeoFunctionMatching> dfm;
   std::string msg;
-  std::tie(dfm, msg) = DiffeoFunctionMatching::create(&I0, &I1, 0.1, 0.1, 0.1, compute_phi);
+  std::tie(dfm, msg) = DiffeoFunctionMatching::create(I0, I1, 0.1, 0.1, 0.1, compute_phi);
 
   /*
   dm = difforma_base.DiffeoFunctionMatching(

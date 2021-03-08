@@ -35,7 +35,7 @@ public:
   // null for invalid input or object
   // second in tuple is a message (usually descriptive error state)
   static std::tuple<std::unique_ptr<DiffeoFunctionMatching>, std::string> create(
-    const dGrid* source, dGrid* target,
+    const dGrid& source, const dGrid& target,
     double alpha, double beta, double sigma,
     bool compute_phi);
 
@@ -45,7 +45,7 @@ public:
   void run(int niter, double epsilon);
 
 private:
-  DiffeoFunctionMatching(const dGrid* source, dGrid* target,
+  DiffeoFunctionMatching(const dGrid& source, const dGrid& target,
     double alpha, double beta, double sigma,
     bool compute_phi) :
     m_source(source), m_target(target), m_alpha(alpha), m_beta(beta), m_sigma(sigma),
@@ -55,8 +55,8 @@ private:
 
   void setup();
 
-  const dGrid* m_source;
-  dGrid* m_target;
+  dGrid m_source;
+  dGrid m_target;
   double m_alpha;
   double m_beta;
   double m_sigma;
