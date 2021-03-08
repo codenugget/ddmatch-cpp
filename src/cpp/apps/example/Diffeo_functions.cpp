@@ -2,27 +2,25 @@
 
 using ImageLib::dImage;
 
-bool image_compose_2d(const dImage* I, const dImage* xphi, const dImage* yphi, dImage* Iout) {
-  if (!I or !xphi or !yphi or !Iout)
+bool image_compose_2d(dGrid& I, dGrid& xphi, dGrid& yphi, dGrid& Iout) {
+  if (!I.is_same_shape(xphi) or !I.is_same_shape(yphi) or !I.is_same_shape(Iout))
     return false;
-  if (!I->is_same_shape(*xphi) or !I->is_same_shape(*yphi) or !I->is_same_shape(*Iout))
-    return false;
-  int w = I->width();
-  int h = I->height();
+  int w = I.cols();
+  int h = I.rows();
   if (w != h) // for now assume width == height
     return false;
   int s = w;
   for(int py = 0; py < h; ++py) {
     for(int px = 0; px < w; ++px) {
-      int x0_idx = int(xphi->get(px, py, 0));
-      int y0_idx = int(yphi->get(py, px, 0));
+      int x0_idx = int(xphi[py][px]);
+      int y0_idx = int(yphi[py][px]);
       // QUESTION: why add to index here and not int x1_idx = int(xphi->get(px+1, py  , 0))?
       int x1_idx = x0_idx + 1;
       // QUESTION: why add to index here and not int y1_idx = int(xphi->get(px  , py+1, 0))?
       int y1_idx = y0_idx + 1;
 
-      double frac_dx = xphi->get(px, py, 0) - double(x0_idx);
-      double frac_dy = yphi->get(px, py, 0) - double(y0_idx);
+      double frac_dx = xphi[py][px] - double(x0_idx);
+      double frac_dy = yphi[py][px] - double(y0_idx);
 
       // Id frac_dx is negative it means that xphi is negative, so x0_idx
       // is larger than xphi. We then reduce x0_idx and x1_idx by 1 and
@@ -54,11 +52,11 @@ bool image_compose_2d(const dImage* I, const dImage* xphi, const dImage* yphi, d
       }
 
       double val = 0;
-      val += I->get(x0_idx, y0_idx, 0) * (1.-frac_dx) * (1.-frac_dy);
-      val += I->get(x1_idx, y0_idx, 0) * frac_dx      * (1.-frac_dy);
-      val += I->get(x0_idx, y1_idx, 0) * (1.-frac_dx) * frac_dy;
-      val += I->get(x1_idx, y1_idx, 0) * frac_dx      * frac_dy;
-      Iout->set(px, py, 0, val);
+      val += I[y0_idx][x0_idx] * (1.-frac_dx) * (1.-frac_dy);
+      val += I[y0_idx][x1_idx] * frac_dx      * (1.-frac_dy);
+      val += I[y1_idx][x0_idx] * (1.-frac_dx) * frac_dy;
+      val += I[y1_idx][x1_idx] * frac_dx      * frac_dy;
+      Iout[py][px] = val;
     }
   }
   return true;
@@ -111,15 +109,13 @@ bool image_compose_2d(const dImage* I, const dImage* xphi, const dImage* yphi, d
 }
 
 bool eval_diffeo_2d(
-  const dImage* xpsi,               const dImage* ypsi,
+        dGrid& xpsi,                      dGrid& ypsi,
   const std::vector<double>& xvect, const std::vector<double>& yvect,
         std::vector<double>& xout,        std::vector<double>& yout) {
-  if (!xpsi or !ypsi)
+  if (!xpsi.is_same_shape(ypsi))
     return false;
-  if (!xpsi->is_same_shape(*ypsi))
-    return false;
-  int w = xpsi->width();
-  int h = xpsi->height();
+  int w = xpsi.cols();
+  int h = xpsi.rows();
   if (w != h) // for now assume width == height
     return false;
   int s = w;
@@ -184,17 +180,17 @@ bool eval_diffeo_2d(
 
 
     double val = 0;
-    val += (xpsi->get(x0_idx,y0_idx,0) + x0_shift)* (1.-frac_dx)* (1.-frac_dy);
-    val += (xpsi->get(x1_idx,y0_idx,0) + x1_shift)* frac_dx     * (1.-frac_dy);
-    val += (xpsi->get(x0_idx,y1_idx,0) + x0_shift)* (1.-frac_dx)* frac_dy;
-    val += (xpsi->get(x1_idx,y1_idx,0) + x1_shift)* frac_dx     * frac_dy;
+    val += (xpsi[y0_idx][x0_idx] + x0_shift)* (1.-frac_dx)* (1.-frac_dy);
+    val += (xpsi[y0_idx][x1_idx] + x1_shift)* frac_dx     * (1.-frac_dy);
+    val += (xpsi[y1_idx][x0_idx] + x0_shift)* (1.-frac_dx)* frac_dy;
+    val += (xpsi[y1_idx][x1_idx] + x1_shift)* frac_dx     * frac_dy;
     xout[i] = val;
 
     val = 0;
-    val += (ypsi->get(x0_idx,y0_idx,0) + y0_shift)* (1.-frac_dx)* (1.-frac_dy);
-    val += (ypsi->get(x1_idx,y0_idx,0) + y0_shift)* frac_dx     * (1.-frac_dy);
-    val += (ypsi->get(x0_idx,y1_idx,0) + y1_shift)* (1.-frac_dx)* frac_dy;
-    val += (ypsi->get(x1_idx,y1_idx,0) + y1_shift)* frac_dx     * frac_dy;
+    val += (ypsi[y0_idx][x0_idx] + y0_shift)* (1.-frac_dx)* (1.-frac_dy);
+    val += (ypsi[y0_idx][x1_idx] + y0_shift)* frac_dx     * (1.-frac_dy);
+    val += (ypsi[y1_idx][x0_idx] + y1_shift)* (1.-frac_dx)* frac_dy;
+    val += (ypsi[y1_idx][x1_idx] + y1_shift)* frac_dx     * frac_dy;
     yout[i] = val;
   }
   return true;
@@ -271,31 +267,28 @@ bool eval_diffeo_2d(
 
 
 bool diffeo_compose_2d(
-  const dImage* xpsi, const dImage* ypsi,
-  const dImage* xphi, const dImage* yphi,
-        dImage* xout,       dImage* yout) {
+  dGrid& xpsi, dGrid& ypsi,
+  dGrid& xphi, dGrid& yphi,
+  dGrid& xout, dGrid& yout) {
   // Compute composition psi o phi. 
   // Assuming psi and phi are periodic.
-  if (!xpsi or !ypsi or !xphi or !yphi)
+  if (!xpsi.is_same_shape(ypsi) or !xpsi.is_same_shape(xphi) or !xpsi.is_same_shape(yphi))
     return false;
 
-  if (!xpsi->is_same_shape(*ypsi) or !xpsi->is_same_shape(*xphi) or !xpsi->is_same_shape(*yphi))
-    return false;
-
-  int w = xpsi->width();
-  int h = xpsi->height();
+  int w = xpsi.cols();
+  int h = xpsi.rows();
   if (w != h) // only allow square sizes now
     return false;
   int s = w;
 
   for(int py = 0; py < h; ++py) {
     for(int px = 0; px < w; ++px) {
-      int x0_idx = int(xphi->get(py, px, 0));
-      int y0_idx = int(yphi->get(py, px, 0));
+      int x0_idx = int(xphi[py][px]);
+      int y0_idx = int(yphi[py][px]);
       int x1_idx = x0_idx;
       int y1_idx = y0_idx;
-      double frac_dx = xphi->get(py, px, 0) - double(x0_idx);
-      double frac_dy = yphi->get(py, px, 0) - double(y0_idx);
+      double frac_dx = xphi[py][px] - double(x0_idx);
+      double frac_dy = yphi[py][px] - double(y0_idx);
       double x0_shift = 0.0;
       double x1_shift = 0.0;
       double y0_shift = 0.0;
@@ -344,18 +337,18 @@ bool diffeo_compose_2d(
       }
 
       double val = 0;
-      val += (xpsi->get(x0_idx, y0_idx, 0)+x0_shift) * (1.-frac_dx) * (1.-frac_dy);
-      val += (xpsi->get(x1_idx, y0_idx, 0)+x1_shift) * frac_dx      * (1.-frac_dy);
-      val += (xpsi->get(x0_idx, y1_idx, 0)+x0_shift) * (1.-frac_dx) * frac_dy;
-      val += (xpsi->get(x1_idx, y1_idx, 0)+x1_shift) * frac_dx      * frac_dy;
-      xout->set(px, py, 0, val);
+      val += (xpsi[y0_idx][x0_idx] + x0_shift) * (1.-frac_dx) * (1.-frac_dy);
+      val += (xpsi[y0_idx][x1_idx] + x1_shift) * frac_dx      * (1.-frac_dy);
+      val += (xpsi[y1_idx][x0_idx] + x0_shift) * (1.-frac_dx) * frac_dy;
+      val += (xpsi[y1_idx][x1_idx] + x1_shift) * frac_dx      * frac_dy;
+      xout[py][px] = val;
 
       val = 0;
-      val += (ypsi->get(x0_idx, y0_idx, 0)+y0_shift) * (1.-frac_dx) * (1.-frac_dy);
-      val += (ypsi->get(x1_idx, y0_idx, 0)+y0_shift) * frac_dx      * (1.-frac_dy);
-      val += (ypsi->get(x0_idx, y1_idx, 0)+y1_shift) * (1.-frac_dx) * frac_dy;
-      val += (ypsi->get(x1_idx, y1_idx, 0)+y1_shift) * frac_dx      * frac_dy;
-      yout->set(px, py, 0, val);
+      val += (ypsi[y0_idx][x0_idx] + y0_shift) * (1.-frac_dx) * (1.-frac_dy);
+      val += (ypsi[y0_idx][x1_idx] + y0_shift) * frac_dx      * (1.-frac_dy);
+      val += (ypsi[y1_idx][x0_idx] + y1_shift) * (1.-frac_dx) * frac_dy;
+      val += (ypsi[y1_idx][x1_idx] + y1_shift) * frac_dx      * frac_dy;
+      yout[py][px] = val;
     }
   }
   return true;
@@ -430,14 +423,12 @@ bool diffeo_compose_2d(
 
 
 
-bool diffeo_gradient_y_2d(const dImage* I, dImage* dIdx, dImage* dIdy) {
-  if (!I or !dIdx or !dIdy)
-    return false;
-  if (!I->is_same_shape(*dIdx) or !I->is_same_shape(*dIdy))
+bool diffeo_gradient_y_2d(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
+  if (!I.is_same_shape(dIdx) or !I.is_same_shape(dIdy))
     return false;
 
-  int w = I->width();
-  int h = I->height();
+  int w = I.cols();
+  int h = I.rows();
   if (w != h)
     return false;
 
@@ -452,19 +443,19 @@ bool diffeo_gradient_y_2d(const dImage* I, dImage* dIdx, dImage* dIdy) {
   int im2 = s-2;
   int jm2 = s-2;
   for (int j = 0; j < s; ++j) {
-    dIdy->set(j,   0, 0, (I->get(j, ip1, 0) - I->get(j, im1, 0)+s)/2.0);
-    dIdy->set(j, im1, 0, (I->get(j,   i, 0) - I->get(j, im2, 0)+s)/2.0);
+    dIdy[  0][j] = (I[ip1][j] - I[im1][j] + s)/2.0;
+    dIdy[im1][j] = (I[  i][j] - I[im2][j] + s)/2.0;
   }
   for (int i = 0; i < s; ++i) {
-    dIdx->set(  0, i, 0, (I->get(jp1, i, 0) - I->get(jm1, i, 0))/2.0);
-    dIdx->set(jm1, i, 0, (I->get(  j, i, 0) - I->get(jm2, i, 0))/2.0);
+    dIdx[i][  0] = (I[i][jp1] - I[i][jm1])/2.0;
+    dIdx[i][jm1] = (I[i][  j] - I[i][jm2])/2.0;
   }
   im1 = 0;
   jm1 = 0;
   for(int i = 1; i < s-1; ++i) {
     ip1 = i+1;
     for(int j = 0; j < s; ++j) {
-      dIdy->set(j, i, 0, (I->get(j, ip1, 0) - I->get(j, im1, 0))/2.0);
+      dIdy[i][j] = (I[ip1][j] - I[im1][j])/2.0;
     }
     im1 = i;
   }
@@ -472,7 +463,7 @@ bool diffeo_gradient_y_2d(const dImage* I, dImage* dIdx, dImage* dIdy) {
   for(int j = 1; j < s-1; ++j) {
     jp1 = j+1;
     for(int i = 0; i < s; ++i) {
-      dIdx->set(j, i, 0, (I->get(jp1, i, 0) - I->get(jm1, i, 0))/2.0);
+      dIdx[i][j] = (I[i][jp1] - I[i][jm1])/2.0;
     }
     jm1 = j;
   }

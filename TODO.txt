@@ -1,6 +1,6 @@
 High:
 [ ] Replace usage of dImage with TGrid<double> in Diffeo_functions
+[ ] Fix so it's possible to use const operator[] in TGrid TCube etc
 [x] Replace usage of dImage with TGrid<double> in DiffeoFunctionMatching
-
 Notes (low):
 [ ] Wrap vec<vec<double>> to something else for efficiency?
