@@ -1,7 +1,5 @@
 #include "Diffeo_functions.h"
 
-using ImageLib::dImage;
-
 bool image_compose_2d(dGrid& I, dGrid& xphi, dGrid& yphi, dGrid& Iout) {
   if (!I.is_same_shape(xphi) or !I.is_same_shape(yphi) or !I.is_same_shape(Iout))
     return false;
@@ -502,14 +500,12 @@ bool diffeo_gradient_y_2d(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
 */
 }
 
-bool diffeo_gradient_x_2d(const dImage* I, dImage* dIdx, dImage* dIdy) {
-  if (!I or !dIdx or !dIdy)
-    return false;
-  if (!I->is_same_shape(*dIdx) or !I->is_same_shape(*dIdy))
+bool diffeo_gradient_x_2d(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
+  if (!I.is_same_shape(dIdx) or !I.is_same_shape(dIdy))
     return false;
 
-  int w = I->width();
-  int h = I->height();
+  int w = I.cols();
+  int h = I.rows();
   if (w != h)
     return false;
 
@@ -524,27 +520,27 @@ bool diffeo_gradient_x_2d(const dImage* I, dImage* dIdx, dImage* dIdy) {
   int im2 = s-2;
   int jm2 = s-2;
   for (int j = 0; j < s; ++j) {
-    dIdy->set(j,   0, 0, (I->get(j, ip1, 0) - I->get(j, im1, 0))/2.0);
-    dIdy->set(j, im1, 0, (I->get(j,   i, 0) - I->get(j, im2, 0))/2.0);
+    dIdy[  0][j] = (I[ip1][j] - I[im1][j])/2.0;
+    dIdy[im1][j] = (I[  i][j] - I[im2][j])/2.0;
   }
   j = 0;
   for (int i = 0; i < s; ++i) {
-    dIdx->set(  0, i, 0, (I->get(jp1, i, 0) - I->get(jm1, i, 0)+s)/2.0);
-    dIdx->set(jm1, i, 0, (I->get(  j, i, 0) - I->get(jm2, i, 0)+s)/2.0);
+    dIdx[i][  0] = (I[i][jp1] - I[i][jm1] + s)/2.0;
+    dIdx[i][jm1] = (I[i][  j] - I[i][jm2] + s)/2.0;
   }
   im1 = 0;
   jm1 = 0;
   for(int i = 1; i < s-1; ++i) {
     ip1 = i+1;
     for(int j = 0; j < s; ++j) {
-      dIdy->set(j, i, 0, (I->get(j, ip1, 0) - I->get(j, im1, 0))/2.0);
+      dIdy[i][j] = (I[jp1][j] - I[im1][j])/2.0;
     }
     im1 = i;
   }
   for(int j = 1; j < s-1; ++j) {
     jp1 = j+1;
     for(int i = 0; i < s; ++i) {
-      dIdx->set(j, i, 0, (I->get(jp1, i, 0) - I->get(jm1, i, 0))/2.0);
+      dIdx[i][j] = (I[i][jp1] - I[i][jm1])/2.0;
     }
     jm1 = j;
   }
@@ -583,14 +579,12 @@ bool diffeo_gradient_x_2d(const dImage* I, dImage* dIdx, dImage* dIdy) {
 }
 
 
-bool image_gradient_2d(const dImage* I, dImage* dIdx, dImage* dIdy) {
-  if (!I or !dIdx or !dIdy)
-    return false;
-  if (!I->is_same_shape(*dIdx) or !I->is_same_shape(*dIdy))
+bool image_gradient_2d(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
+  if (!I.is_same_shape(dIdx) or !I.is_same_shape(dIdy))
     return false;
 
-  int w = I->width();
-  int h = I->height();
+  int w = I.cols();
+  int h = I.rows();
   if (w != h)
     return false;
   int s = w;
@@ -602,31 +596,32 @@ bool image_gradient_2d(const dImage* I, dImage* dIdx, dImage* dIdy) {
     int ip1 = i+1;
     for (int j = 0; j < s-1; ++j) {
       jp1 = j+1;
-      double val = (I->get(j, ip1, 0)-I->get(j, im1, 0))/2.0;
-      dIdy->set(j, i, 0, val);
-      val = (I->get(jp1, i, 0)-I->get(jm1, i, 0))/2.0;
-      dIdx->set(j, i, 0, val);
+      double val = (I[ip1][j] - I[im1][j])/2.0;
+      dIdy[i][j] = val;
+      val = (I[i][jp1] - I[jm1][i])/2.0;
+      dIdx[i][j] = val;
       jm1 = j;
     }
-    double val = (I->get(s-1, ip1, 0)-I->get(s-1, im1, 0))/2.0;
-    dIdy->set(s-1, i, 0, val);
-    val = (I->get(0, i, 0)-I->get(s-2, i, 0))/2.0;
+    double val = (I[ip1][s-1] - I[im1][s-1])/2.0;
+    dIdy[i][s-1] = val;
+    val = (I[i][0] - I[i][s-2])/2.0;
+    dIdx[i][s-1] = val;
     jm1 = s-1;
     im1 = i;
   }
   for(int j = 0; j < s-1; ++j) {
     jp1 = j+1;
-    double val = (I->get(j, 0, 0)-I->get(j, im1, 0))/2.0;
-    dIdy->set(j, s-1, 0, val);
-    val = (I->get(jp1, s-1, 0)-I->get(jm1, s-1, 0))/2.0;
-    dIdx->set(j, s-1, 0, val);
+    double val = (I[0][j] - I[im1][j])/2.0;
+    dIdy[s-1][j] = val;
+    val = (I[s-1][jp1] - I[s-1][jm1])/2.0;
+    dIdx[s-1][j] = val;
     jm1 = j;
   }
-  double val = (I->get(s-1, 0, 0)-I->get(s-1,s-2, 0))/2.0;
-  dIdy->set(s-1, s-1, 0, val);
+  double val = (I[0][s-1] - I[s-2][s-1])/2.0;
+  dIdy[s-1][s-1] = val;
   //dIdy[s-1,s-1] = (I[0,s-1]-I[s-2,s-1])/2.0
-  val = (I->get(0, s-1, 0)-I->get(s-2,s-1, 0))/2.0;
-  dIdx->set(s-1, s-1, 0, val);
+  val = (I[s-1][0] - I[s-1][s-2])/2.0;
+  dIdx[s-1][s-1] = val;
   //dIdx[s-1,s-1] = (I[s-1,0]-I[s-1,s-2])/2.0
   return true;
 /*
@@ -654,14 +649,12 @@ bool image_gradient_2d(const dImage* I, dImage* dIdx, dImage* dIdy) {
 */
 }
 
-bool image_gradient_2d_forward(const dImage* I, dImage* dIdx, dImage* dIdy) {
-  if (!I or !dIdx or !dIdy)
-    return false;
-  if (!I->is_same_shape(*dIdx) or !I->is_same_shape(*dIdy))
+bool image_gradient_2d_forward(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
+  if (!I.is_same_shape(dIdx) or !I.is_same_shape(dIdy))
     return false;
 
-  int w = I->width();
-  int h = I->height();
+  int w = I.cols();
+  int h = I.rows();
   if (w != h)
     return false;
   int s = w;
@@ -674,31 +667,31 @@ bool image_gradient_2d_forward(const dImage* I, dImage* dIdx, dImage* dIdy) {
     ip1 = i+1;
     for (int j = 0; j < s-1; ++j) {
       jp1 = j+1;
-      double val = (I->get(j, ip1, 0) - I->get(j, im1, 0)) / 2.0;
-      dIdy->set(j,i,0, val);
-      val = (I->get(jp1, i, 0) - I->get(jm1, i, 0)) / 2.0;
-      dIdx->set(j,i,0, val);
+      double val = (I[ip1][j] - I[im1][j]) / 2.0;
+      dIdy[i][j] = val;
+      val = (I[i][jp1] - I[i][jm1]) / 2.0;
+      dIdx[i][j] = val;
       jm1 = j;
     }
-    double val = (I->get(s-1, ip1, 0) - I->get(s-1, im1, 0)) / 2.0;
-    dIdy->set(s-1, i, 0, val);
-    val = (I->get(0, i, 0) - I->get(s-2, i, 0)) / 2.0;
-    dIdx->set(s-1, i, 0, val);
+    double val = (I[ip1][s-1] - I[im1][s-1]) / 2.0;
+    dIdy[i][s-1] = val;
+    val = (I[i][0] - I[i][s-2]) / 2.0;
+    dIdx[i][s-1] = val;
     jm1 = s-1;
     im1 = i;
   }
   for(int j = 0; j < s-1; ++j) {
     jp1 = j+1;
-    double val = (I->get(j, 0, 0)-I->get(j, im1, 0))/2.0;
-    dIdy->set(j, s-1, 0, val);
-    val = (I->get(jp1, s-1, 0)-I->get(jm1, s-1, 0))/2.0;
-    dIdx->set(j, s-1, 0, val);
+    double val = (I[0][j] - I[im1][j])/2.0;
+    dIdy[s-1][j] = val;
+    val = (I[s-1][jp1] - I[s-1][jm1])/2.0;
+    dIdx[s-1][j] = val;
     jm1 = j;
   }
-  double val = (I->get(s-1, 0, 0) - I->get(s-1, s-2, 0))/2.0;
-  dIdy->set(s-1, s-1, 0, val);
-  val = (I->get(0, s-1, 0) - I->get(s-2, s-1, 0))/2.0;
-  dIdx->set(s-1, s-1, 0, val);
+  double val = (I[0][s-1] - I[s-2][s-1])/2.0;
+  dIdy[s-1][s-1] = val;
+  val = (I[s-1][0] - I[s-1][s-2])/2.0;
+  dIdx[s-1][s-1] = val;
   return true;
 /*
   def image_gradient_2d_forward(I,dIdx,dIdy):
@@ -728,14 +721,12 @@ bool image_gradient_2d_forward(const dImage* I, dImage* dIdx, dImage* dIdy) {
 }
 
 
-bool divergence_2d(const dImage* vx, const dImage* vy, dImage* divv) {
-  if (!vx or !vy or !divv)
-    return false;
-  if (!vx->is_same_shape(*vy) or !vx->is_same_shape(*divv))
+bool divergence_2d(dGrid& vx, dGrid& vy, dGrid& divv) {
+  if (!vx.is_same_shape(vy) or !vx.is_same_shape(divv))
     return false;
 
-  int w = vx->width();
-  int h = vx->height();
+  int w = vx.cols();
+  int h = vx.rows();
   if (w != h)
     return false;
   int s = w;
@@ -748,15 +739,15 @@ bool divergence_2d(const dImage* vx, const dImage* vy, dImage* divv) {
     ip1 = i+1;
     for (int j = 0; i < s-1; ++j) {
       jp1 = j+1;
-      double dy = vy->get(j, ip1, 0) - vy->get(j, im1, 0);
-      double dx = vx->get(jp1, i, 0) - vx->get(jm1, i, 0);
-      divv->set(j, i, 0, (dx + dy)/2.0);
+      double dy = vy[ip1][  j] - vy[im1][  j];
+      double dx = vx[  i][jp1] - vx[  i][jm1];
+      divv[i][j] = (dx + dy)/2.0;
       //divv[i,j] = (vy[ip1,j]-vy[im1,j] + vx[i,jp1]-vx[i,jm1])/2.0
       jm1 = j;
     }
-    double dy = vy->get(s-1, ip1, 0) - vy->get(s-1, im1, 0);
-    double dx = vx->get(0, i, 0) - vx->get(s-2, i, 0);
-    divv->set(s-1, i, 0, (dx + dy)/2.0);
+    double dy = vy[ip1][s-1] - vy[im1][s-1];
+    double dx = vx[  i][  0] - vx[  i][s-2];
+    divv[i][s-1] = (dx + dy)/2.0;
     //divv[i,s-1] = (vy[ip1,s-1]-vy[im1,s-1] + vx[i,0]-vx[i,s-2])/2.0
     jm1 = s-1;
     im1 = i;
@@ -764,15 +755,15 @@ bool divergence_2d(const dImage* vx, const dImage* vy, dImage* divv) {
   for(int j = 0; j < s-1; ++j) {
     jp1 = j+1;
     //divv[s-1,j] = (vy[0,j]-vy[im1,j] + vx[s-1,jp1]-vx[s-1,jm1])/2.0
-    double dy = vy->get(j, 0, 0) - vy->get(j, im1, 0);
-    double dx = vx->get(jp1, s-1, 0) - vx->get(jm1, s-1, 0);
-    divv->set(j, s-1, 0, (dx + dy)/2.0);
+    double dy = vy[  0][  j] - vy[im1][  j];
+    double dx = vx[s-1][jp1] - vx[s-1][jm1];
+    divv[s-1][j] = (dx + dy)/2.0;
     jm1 = j;
   }
   //divv[s-1,s-1] = (vy[0,s-1]-vy[s-2,s-1] + vx[s-1,0]-vx[s-1,s-2])/2.0
-  double dy = vy->get(s-1, 0, 0) - vy->get(s-1, s-2, 0);
-  double dx = vx->get(0, s-1, 0) - vx->get(s-2, s-1, 0);
-  divv->set(s-1, s-1, 0, (dx + dy)/2.0);
+  double dy = vy[s-1][  0] - vy[s-1][s-2];
+  double dx = vx[  0][s-1] - vx[s-2][s-1];
+  divv[s-1][s-1] = (dx + dy)/2.0;
   return true;
 /*
   def divergence_2d(vx,vy,divv):
@@ -802,58 +793,55 @@ constexpr double det_2d(const double a11, const double a21, const double a12, co
 }
 
 
-bool jacobian_2d_forward(const dImage* xphi, const dImage* yphi, dImage* jac) {
-  if (!xphi or !yphi or !jac)
-    return false;
-  if (!xphi->is_same_shape(*yphi) or !xphi->is_same_shape(*jac))
+bool jacobian_2d_forward(dGrid& xphi, dGrid& yphi, dGrid& jac) {
+  if (!xphi.is_same_shape(yphi) or !xphi.is_same_shape(jac))
     return false;
 
-  int w = xphi->width();
-  int h = xphi->height();
+  int w = xphi.cols();
+  int h = xphi.rows();
   if (w != h)
     return false;
   int s = w;
-  return true;
 
   for (int i = 0; i < s-1; ++i) {
     for (int j = 0; j < s-1; ++j) {
-      double dxphi_dx = xphi->get(j+1,i,0) - xphi->get(j,i,0);
-      double dxphi_dy = xphi->get(j,i+1,0) - xphi->get(j,i,0);
-      double dyphi_dx = yphi->get(j+1,i,0) - yphi->get(j,i,0);
-      double dyphi_dy = yphi->get(j,i+1,0) - yphi->get(j,i,0);
+      double dxphi_dx = xphi[  i][j+1] - xphi[i][j];
+      double dxphi_dy = xphi[i+1][  j] - xphi[i][j];
+      double dyphi_dx = yphi[  i][j+1] - yphi[i][j];
+      double dyphi_dy = yphi[i+1][  j] - yphi[i][j];
       double det = det_2d(dxphi_dx,dyphi_dx,
                           dxphi_dy,dyphi_dy);
-      jac->set(j, i, 0, det);
+      jac[i][j] = det;
     }
     // TODO: why +s here?
-    double dxphi_dx = xphi->get(0, i,0)+s-xphi->get(s-1,i,0);
-    double dxphi_dy = xphi->get(s-1,i+1,0)-xphi->get(s-1,i,0);
-    double dyphi_dx = yphi->get(0,i,0)-yphi->get(s-1,i,0);
-    double dyphi_dy = yphi->get(s-1,i+1,0)-yphi->get(s-1,i,0);
+    double dxphi_dx = xphi[  i][  0] + s - xphi[i][s-1];
+    double dxphi_dy = xphi[i+1][s-1]     - xphi[i][s-1];
+    double dyphi_dx = yphi[  i][  0]     - yphi[i][s-1];
+    double dyphi_dy = yphi[i+1][s-1]     - yphi[i][s-1];
     double det = det_2d(dxphi_dx,dyphi_dx,
                         dxphi_dy,dyphi_dy);
 
-    jac->set(s-1, i, 0, det);
+    jac[i][s-1] = det;
   }
   for (int j = 0; j < s-1; ++j) {
-    double dxphi_dx = xphi->get(j+1,s-1,0)-xphi->get(j,s-1,0);
-    double dxphi_dy = xphi->get(j,0,0)-xphi->get(j,s-1,0);
-    double dyphi_dx = yphi->get(j+1,s-1,0)-yphi->get(j,s-1,0);
-    double dyphi_dy = yphi->get(j,0,0)-yphi->get(j,s-1,0);
+    double dxphi_dx = xphi[s-1][j+1] - xphi[s-1][j];
+    double dxphi_dy = xphi[  0][  j] - xphi[s-1][j];
+    double dyphi_dx = yphi[s-1][j+1] - yphi[s-1][j];
+    double dyphi_dy = yphi[  0][  j] - yphi[s-1][j];
     double det = det_2d(dxphi_dx,dyphi_dx,
                         dxphi_dy,dyphi_dy);
-    jac->set(j,s-1,0, det);
+    jac[s-1][j] = det;
   }
 
   // TODO: why +s here?
-  double dxphi_dx = xphi->get(0,s-1,0)+s-xphi->get(s-1,s-1,0);
-  double dxphi_dy = xphi->get(s-1,0,0)-xphi->get(s-1,s-1,0);
-  double dyphi_dx = yphi->get(0,s-1,0)-yphi->get(s-1,s-1,0);
-  // TODO: why +s here?
-  double dyphi_dy = yphi->get(s-1,0,0)+s-yphi->get(s-1,s-1,0);
+  double dxphi_dx = xphi[s-1][  0] + s - xphi[s-1][s-1];
+  double dxphi_dy = xphi[  0][s-1]     - xphi[s-1][s-1];
+  double dyphi_dx = yphi[s-1][  0]     - yphi[s-1][s-1];
+  double dyphi_dy = yphi[  0][s-1] + s - yphi[s-1][s-1];
   double det = det_2d(dxphi_dx,dyphi_dx,
                       dxphi_dy,dyphi_dy);
-  jac->set(s-1,s-1,0, det);
+  jac[s-1][s-1] = det;
+  return true;
 }
 /*
   def jacobian_2d_forward(xphi,yphi,jac):
