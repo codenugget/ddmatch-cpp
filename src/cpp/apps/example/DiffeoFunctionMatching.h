@@ -40,6 +40,17 @@ public:
   // epsilon - The stepsize in the gradient descent method.
   void run(int niter, double epsilon);
 
+  const dGrid& target() const { return m_target; }
+  const dGrid& source() const { return m_source; }
+
+  const dGrid& warped() const { return m_I; }
+
+  const dGrid& phi_x() const { return m_phix; }
+  const dGrid& phi_y() const { return m_phiy; }
+
+  const dGrid& phi_inv_x() const { return m_phiinvx; }
+  const dGrid& phi_inv_y() const { return m_phiinvy; }
+
 private:
   DiffeoFunctionMatching(const dGrid& source, const dGrid& target,
     double alpha, double beta, double sigma,

@@ -1,7 +1,9 @@
+#include <filesystem>
 #include <iostream>
+#include <random>
 #include <string>
 
-#include <random>
+#include "core/MyArrays.h"
 
 #include "image/Image.h"
 #include "image/Image_funcs.h"
@@ -9,27 +11,156 @@
 
 #include "DiffeoFunctionMatching.h"
 
-#include "core/MyArrays.h"
-
 using ImageLib::TImage;
 
-void run_and_save_example(dGrid& I0, dGrid& I1, const std::string& subpath, const std::string& desc)
+namespace fs = std::filesystem;
+
+
+std::unique_ptr<ImageLib::Image> create_image(const dGrid& grid) {
+  int w = grid.cols();
+  int h = grid.rows();
+  std::unique_ptr<ImageLib::Image> ret = std::make_unique<ImageLib::Image>(w, h, 1);
+  uint8_t* dst = ret->data();
+  for(int y = 0; y < h; ++y) {
+    for(int x = 0; x < w; ++x) {
+      int c = static_cast<int>(grid[y][x] * 255.0);
+      c = std::min(std::max(c, 0), 255);
+      dst[y*w+x] = static_cast<uint8_t>(c & 0xff);
+    }
+  }
+  return ret;
+}
+
+bool save_image(const dGrid& grid, const fs::path& filename) {
+  //auto img = create_image(grid);
+  auto img = create_image(grid);
+  const auto [ok, msg] = ImageLib::save(img.get(), filename.string());
+  if (!ok)
+    printf("ERROR: %s\n", msg.c_str());
+  return ok;
+}
+
+dGrid combine_warp(const dGrid& dx, const dGrid& dy) {
+  return dx;
+}
+
+void run_and_save_example(const dGrid& I0, const dGrid& I1, const std::string& subpath, const std::string& desc)
 {
   printf("%s Initializing\n", subpath.c_str());
 
   bool compute_phi = true;
   std::unique_ptr<DiffeoFunctionMatching> dfm;
   std::string msg;
-  std::tie(dfm, msg) = DiffeoFunctionMatching::create(I0, I1, 0.1, 0.1, 0.1, compute_phi);
+  double alpha = 0.001;
+  double beta  = 0.03;
+  double sigma = 0.05;
 
-  /*
-  dm = difforma_base.DiffeoFunctionMatching(
-    source=I0, target=I1,
-    alpha=0.001, beta=0.03, sigma=0.05
-  )*/
+  //dm = difforma_base.DiffeoFunctionMatching(
+  //  source=I0, target=I1,
+  //  alpha=0.001, beta=0.03, sigma=0.05
+  //)
+  std::tie(dfm, msg) = DiffeoFunctionMatching::create(I0, I1, alpha, beta, sigma, compute_phi);
+  if (!dfm) {
+    printf("ERROR: %s\n", msg.c_str());
+    return;
+  }
 
   printf("%s Running\n", subpath.c_str());
-  //dm.run(1000, epsilon=0.1)
+  int num_iters = 1000;
+  double epsilon = 0.1;
+  dfm->run(num_iters, epsilon);
+  
+  //if not path.exists(subpath):
+  //  os.makedirs(subpath)
+  fs::path root_path(subpath);
+  printf("%s: Creating plots\n", subpath.c_str());
+  fs::create_directories(root_path);
+
+  fs::path overview_path = root_path / "overview";
+  fs::create_directories(overview_path);
+
+  //# 2x2 overview plot
+  //plt1 = plt.figure(1, figsize=(11.7,9))
+  //plt.clf()
+
+  //plt.subplot(2,2,1)
+  //plt.imshow(dm.target, cmap='bone', vmin=dm.I0.min(), vmax=dm.I0.max())
+  //plt.colorbar()
+  //plt.title('Target image')
+  save_image(dfm->target(), overview_path/"target.png");
+
+  //plt.subplot(2,2,2)
+  //plt.imshow(dm.source, cmap='bone', vmin=dm.I0.min(), vmax=dm.I0.max())
+  //plt.colorbar()
+  //plt.title('Template image')
+  save_image(dfm->source(), overview_path/"template.png");
+
+  //plt.subplot(2,2,3)
+  //plt.imshow(dm.I, cmap='bone', vmin=dm.I0.min(), vmax=dm.I0.max())
+  //plt.colorbar()
+  //plt.title('Warped image')
+  save_image(dfm->warped(), overview_path/"warped.png");
+
+  //plt.subplot(2,2,4)
+  //# Forward warp    
+  //phix = dm.phix
+  //phiy = dm.phiy
+  //# Uncomment for backward warp
+  //#phix = dm.phiinvx
+  //#phiy = dm.phiinvy
+  //plot_warp(phix, phiy, downsample=4)
+  auto warped = combine_warp(dfm->phi_x(), dfm->phi_y());
+  save_image(warped, overview_path/"forward_warp.png");
+  warped = combine_warp(dfm->phi_inv_x(), dfm->phi_inv_y());
+  save_image(warped, overview_path/"backward_warp.png");
+  //plt.axis('equal')
+  //warplim = [phix.min(), phix.max(), phiy.min(), phiy.max()]
+  //warplim[0] = min(warplim[0], warplim[2])
+  //warplim[2] = warplim[0]
+  //warplim[1] = max(warplim[1], warplim[3])
+  //warplim[3] = warplim[1]
+
+  //plt.axis(warplim)
+  //plt.gca().invert_yaxis()
+  //plt.gca().set_aspect('equal')
+  //plt.title('Warp')
+  //plt.grid()
+  //plt1.savefig(path.join(subpath, 'overview.png'), dpi=300, bbox_inches='tight')
+
+  //# Energy convergence plot
+  //plt2 = plt.figure(2, figsize=(8,4.5))
+  //plt.clf()
+  //plt.plot(dm.E)
+  //plt.grid()
+  //plt.ylabel('Energy')
+  //plt2.savefig(os.path.join(subpath, 'convergence.png'), dpi=150, bbox_inches='tight')
+
+  //# Dedicated warp plot (forward only)
+  //plt3 = plt.figure(3, figsize=(10,10))
+  //plt.clf()
+  //plot_warp(phix, phiy, downsample=4, )
+  //plt.axis('equal')
+  //warplim = [phix.min(), phix.max(), phiy.min(), phiy.max()]
+  //warplim[0] = min(warplim[0], warplim[2])
+  //warplim[2] = warplim[0]
+  //warplim[1] = max(warplim[1], warplim[3])
+  //warplim[3] = warplim[1]
+
+  //plt.axis(warplim)
+  //plt.gca().invert_yaxis()
+  //plt.gca().set_aspect('equal')
+  //plt.title('Warp')
+  //plt.axis('off')
+  //#plt.grid(color='black')
+  //plt3.savefig(path.join(subpath, 'warp.png'), dpi=150, bbox_inches='tight')
+  
+  //# Output description
+  //with open(path.join(subpath, 'description.txt'), 'w') as f:
+  //  f.write(subpath)
+  //  f.write('\n')
+  //  f.write(description)
+  //  
+  //print('Done at ' + time.asctime() + '\n')
 }
 
 

@@ -83,7 +83,7 @@ std::tuple<std::unique_ptr<DiffeoFunctionMatching>, std::string> DiffeoFunctionM
 }
 
 void DiffeoFunctionMatching::setup() {
-  dGrid& I0 = m_target;
+  const dGrid& I0 = m_target;
   const dGrid& I1 = m_source;
 
   // Create optimized algorithm functions
