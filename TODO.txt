@@ -1,6 +1,10 @@
 High:
-[ ] Fix so it's possible to use const operator[] in TGrid TCube etc
+[ ] Make it possible to run the simplest example
+[ ] Generalize to arbitrary width / height
 [x] Replace usage of dImage with TGrid<double> in DiffeoFunctionMatching
 [x] Replace usage of dImage with TGrid<double> in Diffeo_functions
+[x] Fix so it's possible to use const operator[] in TGrid TCube etc
+
 Notes (low):
 [ ] Wrap vec<vec<double>> to something else for efficiency?
+[ ] cleanup stage (mostly I've bloated the ImageLib with unused functions)

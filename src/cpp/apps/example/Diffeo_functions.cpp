@@ -1,6 +1,6 @@
 #include "Diffeo_functions.h"
 
-bool image_compose_2d(dGrid& I, dGrid& xphi, dGrid& yphi, dGrid& Iout) {
+bool image_compose_2d(const dGrid& I, const dGrid& xphi, const dGrid& yphi, dGrid& Iout) {
   if (!I.is_same_shape(xphi) or !I.is_same_shape(yphi) or !I.is_same_shape(Iout))
     return false;
   int w = I.cols();
@@ -107,7 +107,7 @@ bool image_compose_2d(dGrid& I, dGrid& xphi, dGrid& yphi, dGrid& Iout) {
 }
 
 bool eval_diffeo_2d(
-        dGrid& xpsi,                      dGrid& ypsi,
+  const dGrid& xpsi,                const dGrid& ypsi,
   const std::vector<double>& xvect, const std::vector<double>& yvect,
         std::vector<double>& xout,        std::vector<double>& yout) {
   if (!xpsi.is_same_shape(ypsi))
@@ -265,8 +265,8 @@ bool eval_diffeo_2d(
 
 
 bool diffeo_compose_2d(
-  dGrid& xpsi, dGrid& ypsi,
-  dGrid& xphi, dGrid& yphi,
+  const dGrid& xpsi, const dGrid& ypsi,
+  const dGrid& xphi, const dGrid& yphi,
   dGrid& xout, dGrid& yout) {
   // Compute composition psi o phi. 
   // Assuming psi and phi are periodic.
@@ -421,7 +421,7 @@ bool diffeo_compose_2d(
 
 
 
-bool diffeo_gradient_y_2d(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
+bool diffeo_gradient_y_2d(const dGrid& I, dGrid& dIdx, dGrid& dIdy) {
   if (!I.is_same_shape(dIdx) or !I.is_same_shape(dIdy))
     return false;
 
@@ -500,7 +500,7 @@ bool diffeo_gradient_y_2d(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
 */
 }
 
-bool diffeo_gradient_x_2d(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
+bool diffeo_gradient_x_2d(const dGrid& I, dGrid& dIdx, dGrid& dIdy) {
   if (!I.is_same_shape(dIdx) or !I.is_same_shape(dIdy))
     return false;
 
@@ -579,7 +579,7 @@ bool diffeo_gradient_x_2d(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
 }
 
 
-bool image_gradient_2d(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
+bool image_gradient_2d(const dGrid& I, dGrid& dIdx, dGrid& dIdy) {
   if (!I.is_same_shape(dIdx) or !I.is_same_shape(dIdy))
     return false;
 
@@ -649,7 +649,7 @@ bool image_gradient_2d(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
 */
 }
 
-bool image_gradient_2d_forward(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
+bool image_gradient_2d_forward(const dGrid& I, dGrid& dIdx, dGrid& dIdy) {
   if (!I.is_same_shape(dIdx) or !I.is_same_shape(dIdy))
     return false;
 
@@ -721,7 +721,7 @@ bool image_gradient_2d_forward(dGrid& I, dGrid& dIdx, dGrid& dIdy) {
 }
 
 
-bool divergence_2d(dGrid& vx, dGrid& vy, dGrid& divv) {
+bool divergence_2d(const dGrid& vx, const dGrid& vy, dGrid& divv) {
   if (!vx.is_same_shape(vy) or !vx.is_same_shape(divv))
     return false;
 
@@ -793,7 +793,7 @@ constexpr double det_2d(const double a11, const double a21, const double a12, co
 }
 
 
-bool jacobian_2d_forward(dGrid& xphi, dGrid& yphi, dGrid& jac) {
+bool jacobian_2d_forward(const dGrid& xphi, const dGrid& yphi, dGrid& jac) {
   if (!xphi.is_same_shape(yphi) or !xphi.is_same_shape(jac))
     return false;
 

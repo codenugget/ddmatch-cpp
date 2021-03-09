@@ -32,6 +32,37 @@ private:
 };
 
 template<typename T>
+class const_TVecRef {
+public:
+  const_TVecRef(int cols, const T* ptr) : m_cols(cols), m_ptr(ptr) {
+  }
+
+  int cols() const { return m_cols; }
+  int size() const { return cols(); }
+  int size_bytes() const { return size() * sizeof(T); }
+
+  bool is_same_shape(const TVecRef<T>& other) const {
+    return cols() == other.cols();
+  }
+
+  bool is_same_shape(const const_TVecRef<T>& other) const {
+    return cols() == other.cols();
+  }
+
+  const T* data() const { return m_ptr; }
+
+  const T& operator[](int i) {
+    assert(i >= 0);
+    assert(i < m_cols);
+    return m_ptr[i];
+  }
+
+private:
+  int m_cols = 0;
+  const T* m_ptr = nullptr;
+};
+
+template<typename T>
 class TGridRef {
 public:
   TGridRef(int rows, int cols, T* ptr) : m_rows(rows), m_cols(cols), m_ptr(ptr) {
@@ -42,7 +73,7 @@ public:
   int size() const { return rows() * cols(); }
   int size_bytes() const { return size() * sizeof(T); }
 
-  bool is_same_shape(const TGridRef<T>& other) const {
+  bool is_same_shape(TGridRef<T>& other) const {
     return rows() == other.rows() and cols() == other.cols();
   }
 
@@ -112,6 +143,12 @@ public:
     assert(i >= 0);
     assert(i < m_rows);
     return TVecRef<T>(m_cols, &m_array[i * m_cols]);
+  }
+
+  const_TVecRef<T> operator[](int i) const {
+    assert(i >= 0);
+    assert(i < m_rows);
+    return const_TVecRef<T>(m_cols, &m_array[i * m_cols]);
   }
 
 private:
