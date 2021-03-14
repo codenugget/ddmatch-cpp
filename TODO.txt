@@ -1,8 +1,11 @@
 High:
-[ ] Add gtest to failing function(s)
+[ ] Add test cases for core lib
+[ ] Add many more test cases to make sure code conversion works as expected
 [ ] Pythons modulo difers from c++, need to do: ((x % n) + n) % n to make them the work same
+    Maybe just add n if result is negative for performance reasons?
 [ ] Make it possible to run the simplest example
 [ ] Generalize to arbitrary width / height
+[x] Add gtest to failing function(s)
 [x] Add gtest to the project structure
 [x] Separate code from example app to ddmatchLib so we can test it
 [x] Replace usage of dImage with TGrid<double> in DiffeoFunctionMatching
@@ -10,8 +13,9 @@ High:
 [x] Fix so it's possible to use const operator[] in TGrid TCube etc
 
 Notes (low):
-[ ] Wrap vec<vec<double>> to something else for efficiency?
 [ ] cleanup stage (mostly I've bloated the ImageLib with unused functions)
+[ ] gtest: Replace printf() with std::cout to be able to prune the output while running tests?
 
-Fine tuning (low low):
-[ ] Preparing gtest: Replace printf() with std::cout to be able to prune the output while running tests?
+WON'T FIX:
+[ ] Wrap vec<vec<double>> to something else for efficiency?
+  REASON: already done differently
