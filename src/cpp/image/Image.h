@@ -24,7 +24,7 @@ namespace ImageLib
 
     int count_pixels() const { return width() * height(); }
     int count_pixel_components() const { return count_pixels() * components(); }
-    int count_bytes() const { return m_pixel_data.size() * sizeof(T); }
+    int count_bytes() const { return static_cast<int>(m_pixel_data.size() * sizeof(T)); }
     int stride_byte_size() const { return width() * components() * sizeof(T); }
 
     void set_flipped(bool f) { m_image_flipped = f ? 1 : 0; }

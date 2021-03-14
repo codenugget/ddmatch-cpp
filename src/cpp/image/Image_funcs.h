@@ -120,15 +120,15 @@ namespace ImageLib
 
   inline std::unique_ptr<Image> convert_rgb_to_ycbcr(const uint32_t w, const uint32_t h, const uint32_t c, const uint8_t* data) {
     std::unique_ptr<Image> ret = std::make_unique<Image>(w, h, 3);
-    uint8_t* dst = ret->data();
+    unsigned char* dst = ret->data();
 
-    auto to_u8 = [](double v) -> uint8_t {
+    auto to_u8 = [](double v) -> unsigned char {
       if (v < 0)
         return 0;
       if (v > 255)
         return 255;
       else
-        return uint8_t(v + 0.5);
+        return static_cast<unsigned char>(v + 0.5);
     };
 
     uint8_t ur, ug, ub;
