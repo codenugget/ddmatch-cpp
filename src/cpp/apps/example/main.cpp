@@ -9,7 +9,7 @@
 #include "image/Image_funcs.h"
 #include "image/Image_storage.h"
 
-#include "DiffeoFunctionMatching.h"
+#include "ddmatch/DiffeoFunctionMatching.h"
 
 using ImageLib::TImage;
 

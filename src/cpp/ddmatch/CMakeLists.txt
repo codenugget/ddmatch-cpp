@@ -3,6 +3,10 @@ project (ddmatchLib)
 set(CMAKE_DEBUG_POSTFIX d)
 
 set(src
+  DiffeoFunctionMatching.cpp
+  DiffeoFunctionMatching.h
+  Diffeo_functions.cpp
+  Diffeo_functions.h
   stub.cpp
 )
 set(headers )
