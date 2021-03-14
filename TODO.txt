@@ -1,5 +1,6 @@
 High:
 [ ] Add gtest to failing function(s)
+[ ] Pythons modulo difers from c++, need to do: ((x % n) + n) % n to make them the work same
 [ ] Make it possible to run the simplest example
 [ ] Generalize to arbitrary width / height
 [x] Add gtest to the project structure
