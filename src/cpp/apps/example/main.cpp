@@ -32,7 +32,6 @@ std::unique_ptr<ImageLib::Image> create_image(const dGrid& grid) {
 }
 
 bool save_image(const dGrid& grid, const fs::path& filename) {
-  //auto img = create_image(grid);
   auto img = create_image(grid);
   const auto [ok, msg] = ImageLib::save(img.get(), filename.string());
   if (!ok)
@@ -255,7 +254,6 @@ def run_and_save_example(I0, I1, subpath, description):
     
   print('Done at ' + time.asctime() + '\n')
 */
-
 
 void test1() {
   //std::random rnd;

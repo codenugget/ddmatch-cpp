@@ -5,7 +5,7 @@ cd ..
 if ! [ -d build ]; then
   mkdir -p build
   cd build
-  cmake ..
+  cmake .. -DCMAKE_BUILD_TYPE=Debug
 else
   cd build
 fi

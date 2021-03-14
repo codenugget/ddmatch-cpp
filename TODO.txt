@@ -5,6 +5,12 @@ High:
 [x] Replace usage of dImage with TGrid<double> in Diffeo_functions
 [x] Fix so it's possible to use const operator[] in TGrid TCube etc
 
+Medium:
+[ ] When we have something that works write rudimentary gtests
+
 Notes (low):
 [ ] Wrap vec<vec<double>> to something else for efficiency?
 [ ] cleanup stage (mostly I've bloated the ImageLib with unused functions)
+
+Fine tuning (low low):
+[ ] Preparing gtest: Replace printf() with std::cout to be able to prune the output while running tests?

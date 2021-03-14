@@ -263,6 +263,26 @@ bool eval_diffeo_2d(
 */
 }
 
+#define FIND_BUG
+#ifdef FIND_BUG
+#include <cstring>
+#include <fstream>
+void dump_data(const dGrid& g, const char* filename) {
+  std::ofstream fp(filename, std::ios::binary);
+
+  int w = g.cols();
+  int h = g.rows();
+  for(int y = 0; y < h; ++y) {
+    for(int x = 0; x < w; ++x) {
+      char buf[128];
+      sprintf(buf, "%.4f, ", g[y][x]);
+      auto l = strlen(buf);
+      fp.write(buf, l);
+    }
+    fp.write("\n", 1);
+  }
+}
+#endif
 
 bool diffeo_compose_2d(
   const dGrid& xpsi, const dGrid& ypsi,
@@ -279,6 +299,16 @@ bool diffeo_compose_2d(
     return false;
   int s = w;
 
+#ifdef FIND_BUG
+  dump_data(xpsi, "xpsi.dat");
+  dump_data(ypsi, "ypsi.dat");
+  dump_data(xphi, "xphi.dat");
+  dump_data(yphi, "yphi.dat");
+  dump_data(xout, "xout.dat");
+  dump_data(yout, "yout.dat");
+#endif
+
+#if 1
   for(int py = 0; py < h; ++py) {
     for(int px = 0; px < w; ++px) {
       int x0_idx = int(xphi[py][px]);
@@ -334,6 +364,7 @@ bool diffeo_compose_2d(
         y1_shift = float(s);
       }
 
+      // NOTE: commented lines makes it crash (index out of bounds)
       double val = 0;
       val += (xpsi[y0_idx][x0_idx] + x0_shift) * (1.-frac_dx) * (1.-frac_dy);
       val += (xpsi[y0_idx][x1_idx] + x1_shift) * frac_dx      * (1.-frac_dy);
@@ -350,7 +381,80 @@ bool diffeo_compose_2d(
     }
   }
   return true;
-  /*
+#else
+  for (int i = 0; i < h; ++i) {
+    for (int j = 0; j < w; ++j) {
+        int xind = int(xphi[i][j]);
+        int yind = int(yphi[i][j]);
+        int xindp1 = xind+1;
+        int yindp1 = yind+1;
+        double deltax = xphi[i][j]-float(xind);
+        double deltay = yphi[i][j]-float(yind);
+        double xshift = 0.0;
+        double xshiftp1 = 0.0;
+        double yshift = 0.0;
+        double yshiftp1 = 0.0;
+        // If xdelta is negative it means that xphi is negative, so xind
+        // is larger than xphi. We then reduce xind and xindp1 by 1 and
+        // after that impose the periodic boundary conditions.
+        if (deltax < 0 or xind < 0) {
+          deltax += 1.0;
+          xind -= 1;
+          xindp1 -= 1;
+          xind %= s;
+          xshift = -float(s);// # Should use floor_divide here instead.
+          if (xindp1 < 0) {
+            xindp1 %= s;
+            xshiftp1 = -float(s);
+          }
+        }
+        else if (xind >= s) {
+          xind %= s;
+          xindp1 %= s;
+          xshift = float(s);
+          xshiftp1 = float(s);
+        }
+        else if (xindp1 >= s) {
+          xindp1 %= s;
+          xshiftp1 = float(s);
+        }
+
+        if (deltay < 0 or yind < 0) {
+          deltay += 1.0;
+          yind -= 1;
+          yindp1 -= 1;
+          yind %= s;
+          yshift = -float(s);// # Should use floor_divide here instead.
+          if (yindp1 < 0) {
+            yindp1 %= s;
+            yshiftp1 = -float(s);
+          }
+        }
+        else if (yind >= s) {
+          yind %= s;
+          yindp1 %= s;
+          yshift = float(s);
+          yshiftp1 = float(s);
+        }
+        else if (yindp1 >= s) {
+          yindp1 %= s;
+          yshiftp1 = float(s);
+        }
+        xout[i][j] =(xpsi[yind][xind]    +xshift  )*(1.-deltax)*(1.-deltay)+\
+                    (xpsi[yind][xindp1]  +xshiftp1)*deltax     *(1.-deltay)+\
+                    (xpsi[yindp1][xind]  +xshift  )*deltay     *(1.-deltax)+\
+                    (xpsi[yindp1][xindp1]+xshiftp1)*deltay     *deltax;
+        
+        yout[i][j] =(ypsi[yind][xind]    +yshift  )*(1.-deltax)*(1.-deltay)+\
+                    (ypsi[yind][xindp1]  +yshift  )*deltax     *(1.-deltay)+\
+                    (ypsi[yindp1][xind]  +yshiftp1)*deltay     *(1.-deltax)+\
+                    (ypsi[yindp1][xindp1]+yshiftp1)*deltay     *deltax;
+    }
+  }
+  return true;
+#endif
+}
+/*
   def diffeo_compose_2d(xpsi,ypsi,xphi,yphi,xout,yout):
   # Compute composition psi o phi. 
   # Assuming psi and phi are periodic.
@@ -416,10 +520,9 @@ bool diffeo_compose_2d(
                     (ypsi[yind,xindp1]  +yshift  )*deltax     *(1.-deltay)+\
                     (ypsi[yindp1,xind]  +yshiftp1)*deltay     *(1.-deltax)+\
                     (ypsi[yindp1,xindp1]+yshiftp1)*deltay     *deltax
-  */
-}
 
-
+  return diffeo_compose_2d
+*/
 
 bool diffeo_gradient_y_2d(const dGrid& I, dGrid& dIdx, dGrid& dIdy) {
   if (!I.is_same_shape(dIdx) or !I.is_same_shape(dIdy))

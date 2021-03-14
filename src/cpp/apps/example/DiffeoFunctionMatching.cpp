@@ -273,6 +273,22 @@ void DiffeoFunctionMatching::setup() {
   }
 }
 
+dGrid fftn(const dGrid& g) {
+  return g;
+}
+
+class CplxGrid {
+public:
+  dGrid real() const { return m_real; }
+  dGrid m_real;
+  dGrid m_complex;
+};
+
+CplxGrid ifftn(const dGrid& g) {
+  return CplxGrid{g, g};
+}
+
+
 void DiffeoFunctionMatching::run(int niter, double epsilon) {
   // Carry out the matching process.
   // Implements to algorithm in the paper by Modin and Karlsson
@@ -308,14 +324,171 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     //self.E[k+kE] += self.sigma*self.tmpx.sum()
     m_E[k+kE] += m_sigma * sum(m_tmpx);
 
-/*
     //self.image_compose(self.I1, self.phiinvx, self.phiinvy, self.I)
-    image_compose_2d(m_I1.get(), m_phiinvx, m_phiinvy, m_I.get());
+    image_compose_2d(m_I1, m_phiinvx, m_phiinvy, m_I);
+
     //self.diffeo_gradient_y(self.phiinvy, self.yddx, self.yddy)
     //self.diffeo_gradient_x(self.phiinvx, self.xddx, self.xddy)
-    diffeo_gradient_y_2d(m_phiinvy, m_yddx.get(), m_yddy.get());
-    diffeo_gradient_x_2d(m_phiinvx, m_xddx.get(), m_xddy.get());
-    */
+    diffeo_gradient_y_2d(m_phiinvy, m_yddx, m_yddy);
+    diffeo_gradient_x_2d(m_phiinvx, m_xddx, m_xddy);
+
+    const auto qq_sq = [](const double x, const double y){
+      double v = x*x + y*y;
+      return v*v;
+    };
+    //np.copyto(self.h[0,0], self.yddy*self.yddy+self.xddy*self.xddy)
+    elem_set(m_h[0][0], m_yddy, m_xddy, qq_sq);
+    const auto qq_dot = [](const double x, const double y, const double z, const double w){
+      double v = x*y + z*w;
+      return v*v;
+    };
+    //np.copyto(self.h[1,0], self.yddx*self.yddy+self.xddx*self.xddy)
+    elem_set(m_h[1][0], m_yddx, m_yddy, m_xddx, m_xddy, qq_dot);
+    //np.copyto(self.h[0,1], self.yddy*self.yddx+self.xddy*self.xddx)
+    elem_set(m_h[0][1], m_yddy, m_yddx, m_xddy, m_xddx, qq_dot);
+    //np.copyto(self.h[1,1], self.yddx*self.yddx+self.xddx*self.xddx)
+    elem_set(m_h[1][1], m_yddx, m_xddx, qq_sq);
+
+    //self.image_gradient(self.h[0,0], self.dhaadx, self.dhaady)
+    //self.image_gradient(self.h[0,1], self.dhabdx, self.dhabdy)
+    //self.image_gradient(self.h[1,0], self.dhbadx, self.dhbady)
+    //self.image_gradient(self.h[1,1], self.dhbbdx, self.dhbbdy)
+    image_gradient_2d(m_h[0][0], m_dhaadx, m_dhaady);
+    image_gradient_2d(m_h[0][1], m_dhabdx, m_dhabdy);
+    image_gradient_2d(m_h[1][0], m_dhbadx, m_dhbady);
+    image_gradient_2d(m_h[1][1], m_dhbbdx, m_dhbbdy);
+
+    //np.copyto(
+    //  self.Jmap[0],
+    //   -(self.h[0,0]-self.g[0,0])*self.dhaady
+    //   -(self.h[0,1]-self.g[0,1])*self.dhabdy
+    //   -(self.h[1,0]-self.g[1,0])*self.dhbady
+    //   -(self.h[1,1]-self.g[1,1])*self.dhbbdy
+    //   +2*self.dhaady*self.h[0,0]
+    //   +2*self.dhabdx*self.h[0,0]
+    //   +2*self.dhbady*self.h[1,0]
+    //   +2*self.dhbbdx*self.h[1,0]
+    //   +2*(self.h[0,0]-self.g[0,0])*self.dhaady
+    //   +2*(self.h[1,0]-self.g[1,0])*self.dhbady
+    //   +2*(self.h[0,1]-self.g[0,1])*self.dhaadx
+    //   +2*(self.h[1,1]-self.g[1,1])*self.dhbadx)
+    m_Jmap[0] = 
+      -(
+         (m_h[0][0]-m_g[0][0]) * m_dhaady
+        +(m_h[0][1]-m_g[0][1]) * m_dhabdy
+        +(m_h[1][0]-m_g[1][0]) * m_dhbady
+        +(m_h[1][1]-m_g[1][1]) * m_dhbbdy
+      )
+      +2.0*(
+         (m_dhaady * m_h[0][0])
+        +(m_dhabdx * m_h[0][0])
+        +(m_dhbady * m_h[1][0])
+        +(m_dhbbdx * m_h[1][0])
+        +((m_h[0][0]-m_g[0][0])*m_dhaady)
+        +((m_h[1][0]-m_g[1][0])*m_dhbady)
+        +((m_h[0][1]-m_g[0][1])*m_dhaadx)
+        +((m_h[1][1]-m_g[1][1])*m_dhbadx)
+      );
+
+    //np.copyto(
+    //  self.Jmap[1],
+    //    -(self.h[0,0]-self.g[0,0])*self.dhaadx
+    //    -(self.h[0,1]-self.g[0,1])*self.dhabdx
+    //    -(self.h[1,0]-self.g[1,0])*self.dhbadx
+    //    -(self.h[1,1]-self.g[1,1])*self.dhbbdx
+    //    +2*self.dhaady*self.h[0,1]
+    //    +2*self.dhabdx*self.h[0,1]
+    //    +2*self.dhbady*self.h[1,1]
+    //    +2*self.dhbbdx*self.h[1,1]
+    //    +2*(self.h[0,0]-self.g[0,0])*self.dhabdy
+    //    +2*(self.h[1,0]-self.g[1,0])*self.dhbbdy
+    //    +2*(self.h[0,1]-self.g[0,1])*self.dhabdx
+    //    +2*(self.h[1,1]-self.g[1,1])*self.dhbbdx)
+    m_Jmap[1] = 
+      -(
+         (m_h[0][0]-m_g[0][0]) * m_dhaadx
+        +(m_h[0][1]-m_g[0][1]) * m_dhabdx
+        +(m_h[1][0]-m_g[1][0]) * m_dhbadx
+        +(m_h[1][1]-m_g[1][1]) * m_dhbbdx
+      )
+      +2.0*(
+         (m_dhaady * m_h[0][1])
+        +(m_dhabdx * m_h[0][1])
+        +(m_dhbady * m_h[1][1])
+        +(m_dhbbdx * m_h[1][1])
+        +((m_h[0][0]-m_g[0][0])*m_dhabdy)
+        +((m_h[1][0]-m_g[1][0])*m_dhbbdy)
+        +((m_h[0][1]-m_g[0][1])*m_dhabdx)
+        +((m_h[1][1]-m_g[1][1])*m_dhbbdx)
+      );
+
+    //self.image_gradient(self.I, self.dIdx, self.dIdy)
+    image_gradient_2d(m_I, m_dIdx, m_dIdy);
+    //self.vx = -(self.I-self.I0)*self.dIdx + 2*self.sigma*self.Jmap[1]# axis: [1]
+    //self.vy = -(self.I-self.I0)*self.dIdy + 2*self.sigma*self.Jmap[0]# axis: [0]
+    m_vx = -(m_I-m_I0)*m_dIdx + (2.0*m_sigma)*m_Jmap[1]; //# axis: [1]
+    m_vy = -(m_I-m_I0)*m_dIdy + (2.0*m_sigma)*m_Jmap[0]; //# axis: [0]
+
+    //fftx = np.fft.fftn(self.vx)
+    //ffty = np.fft.fftn(self.vy)
+    //fftx *= self.Linv
+    //ffty *= self.Linv
+
+    dGrid fftx = fftn(m_vx);
+    dGrid ffty = fftn(m_vy);
+    fftx = fftx * m_Linv;
+    ffty = ffty * m_Linv;
+
+    //self.vx[:] = -np.fft.ifftn(fftx).real # vx[:]=smth will copy while vx=smth directs a pointer
+    //self.vy[:] = -np.fft.ifftn(ffty).real
+    //m_vx[:] = -ifftn(fftx).real(); // vx[:]=smth will copy while vx=smth directs a pointer
+    //m_vy[:] = -ifftn(ffty).real();
+    m_vx = -(ifftn(fftx).real()); // vx[:]=smth will copy while vx=smth directs a pointer
+    m_vy = -(ifftn(ffty).real());
+
+    // STEP 4 (v = -grad E, so to compute the inverse we solve \psiinv' = -epsilon*v o \psiinv)
+    //np.copyto(self.tmpx, self.vx)
+    //self.tmpx *= epsilon
+    m_tmpx = epsilon * m_vx;
+
+    //np.copyto(self.psiinvx, self.idx)
+    //self.psiinvx -= self.tmpx
+    m_psiinvx = m_idx - m_tmpx;
+    //if self.compute_phi: # Compute forward phi also (only for output purposes)
+    //  np.copyto(self.psix, self.idx)
+    //  self.psix += self.tmpx
+    if (m_compute_phi) // Compute forward phi also (only for output purposes)
+      m_psix = m_idx + m_tmpx;
+    //np.copyto(self.tmpy, self.vy)
+    //self.tmpy *= epsilon
+    m_tmpy = epsilon * m_vy;
+    //np.copyto(self.psiinvy, self.idy)
+    //self.psiinvy -= self.tmpy
+    m_psiinvy = m_idy - m_tmpy;
+    //if self.compute_phi: # Compute forward phi also (only for output purposes)
+    //  np.copyto(self.psiy, self.idy)
+    //  self.psiy += self.tmpy
+    if (m_compute_phi) // Compute forward phi also (only for output purposes)
+      m_psiy = m_idy + m_tmpy;
+
+    //self.diffeo_compose(self.phiinvx, self.phiinvy, self.psiinvx, self.psiinvy, \
+    //          self.tmpx, self.tmpy) # Compute composition phi o psi = phi o (1-eps*v)
+    //np.copyto(self.phiinvx, self.tmpx)
+    //np.copyto(self.phiinvy, self.tmpy)
+    diffeo_compose_2d(m_phiinvx, m_phiinvy, m_psiinvx, m_psiinvy, m_tmpx, m_tmpy);
+    m_phiinvx = m_tmpx;
+    m_phiinvy = m_tmpy;
+    //if self.compute_phi: # Compute forward phi also (only for output purposes)
+    //  self.diffeo_compose(self.psix, self.psiy, \
+    //            self.phix, self.phiy, \
+    //            self.tmpx, self.tmpy)
+    //  np.copyto(self.phix, self.tmpx)
+    //  np.copyto(self.phiy, self.tmpy)
+    if (m_compute_phi) { // Compute forward phi also (only for output purposes)
+      diffeo_compose_2d(m_psix, m_psiy, m_phix, m_phiy, m_tmpx, m_tmpy);
+      m_phix = m_tmpx;
+      m_phiy = m_tmpy;
+    }
   }
 }
 

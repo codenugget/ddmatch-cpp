@@ -403,7 +403,7 @@ T sum(const TGrid<T>& vals) {
 
 template<typename T, typename Pred>
 bool elem_set(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, Pred f) {
-  if (res.is_same_shape(a) && res.is_same_shape(b))
+  if (!res.is_same_shape(a) || res.is_same_shape(b))
     return false;
   int n = res.size();
   T* dst = res.data();
@@ -416,7 +416,7 @@ bool elem_set(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, Pred f) {
 
 template<typename T, typename Pred>
 bool elem_add(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, Pred f) {
-  if (res.is_same_shape(a) && res.is_same_shape(b))
+  if (!res.is_same_shape(a) || res.is_same_shape(b))
     return false;
   int n = res.size();
   T* dst = res.data();
@@ -426,3 +426,52 @@ bool elem_add(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, Pred f) {
       dst[i] += f(src_a[i], src_b[i]);
   return true;
 }
+
+template<typename T, typename Pred>
+bool elem_set(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, const TGrid<T>& c, const TGrid<T>& d, Pred f) {
+  if (!res.is_same_shape(a) || !res.is_same_shape(b) || !res.is_same_shape(c) || !res.is_same_shape(d))
+    return false;
+  int n = res.size();
+  T* dst = res.data();
+  const T* src_a = a.data();
+  const T* src_b = b.data();
+  const T* src_c = b.data();
+  const T* src_d = b.data();
+  for (int i = 0; i < n; ++i)
+      dst[i] = f(src_a[i], src_b[i], src_c[i], src_d[i]);
+  return true;
+}
+
+template<typename T>
+TGrid<T> operator*(const TGrid<T> &a, const TGrid<T> &b) {
+  assert(a.is_same_shape(b));
+
+  TGrid<T> ret(a);
+  int n = ret.size();
+  T* dst = ret.data();
+  const T* src = b.data();
+  for(int i = 0; i < n; ++i)
+    dst[i] *= src[i];
+  return ret;
+}
+
+template<typename T>
+TGrid<T> operator-(const TGrid<T> &a) {
+  TGrid<T> ret(a);
+  int n = ret.size();
+  T* dst = ret.data();
+  for(int i = 0; i < n; ++i)
+    dst[i] = -dst[i];
+  return ret;
+}
+
+template<typename T>
+TGrid<T> operator*(const double scale, const TGrid<T> &a) {
+  TGrid<T> ret(a);
+  int n = ret.size();
+  T* dst = ret.data();
+  for(int i = 0; i < n; ++i)
+    dst[i] *= scale;
+  return ret;
+}
+
