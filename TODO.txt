@@ -1,8 +1,8 @@
 High:
-[ ] Add gtest to the project structure
 [ ] Add gtest to failing function(s)
 [ ] Make it possible to run the simplest example
 [ ] Generalize to arbitrary width / height
+[x] Add gtest to the project structure
 [x] Separate code from example app to ddmatchLib so we can test it
 [x] Replace usage of dImage with TGrid<double> in DiffeoFunctionMatching
 [x] Replace usage of dImage with TGrid<double> in Diffeo_functions
