@@ -5,6 +5,6 @@ if not exist build (
 )
 cd build
 if not exist ddmatch.sln (
-	cmake ..
+	cmake -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 )
 popd

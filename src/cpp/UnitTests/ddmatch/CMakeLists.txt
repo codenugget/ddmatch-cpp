@@ -1,4 +1,9 @@
 project(UnitTesting_ddmatch)
+
+if (MSVC)
+find_package(GTest CONFIG REQUIRED)
+endif()
+
 set(src
   main.cpp
 )
@@ -15,11 +20,11 @@ target_link_libraries(${PROJECT_NAME}
   gtest
   pthread
 )
-endif (UNIX)
+endif()
 
 if (MSVC)
 target_link_libraries(${PROJECT_NAME}
+  PRIVATE GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
   ddmatchLib
-  gtest
 )
-endif(MSVC)
+endif()
