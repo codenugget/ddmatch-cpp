@@ -7,7 +7,6 @@ set(src
   DiffeoFunctionMatching.h
   Diffeo_functions.cpp
   Diffeo_functions.h
-  stub.cpp
 )
 set(headers )
 
