@@ -29,4 +29,5 @@ bool divergence_2d(const dGrid&  vx, const dGrid& vy, dGrid& divv);
 
 bool jacobian_2d_forward(const dGrid& xphi, const dGrid& yphi, dGrid& jac);
 
+// returns (i0,i1, i0shift, i1shift, fraction)
 std::tuple<int, int, double, double, double> boundary_conditions1(const double value, const int sz);

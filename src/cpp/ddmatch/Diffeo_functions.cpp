@@ -300,7 +300,7 @@ std::tuple<int,int, double,double,double> boundary_conditions1(const double valu
     frac += 1.0;
     i0 -= 1;
     i1 -= 1;
-    i0 %= sz;
+    i0 = ((i0 % sz) + sz) % sz;
     i0_shift = -float(sz); // # Should use floor_divide here instead.
     if (i1 < 0) {
       i1 %= sz;
