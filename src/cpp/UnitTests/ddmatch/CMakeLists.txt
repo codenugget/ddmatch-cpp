@@ -20,11 +20,6 @@ target_link_libraries(${PROJECT_NAME}
   gtest
   pthread
 )
-
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-  WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-  COMMAND ${PROJECT_NAME}
-)
 endif()
 
 if (MSVC)
@@ -33,3 +28,8 @@ target_link_libraries(${PROJECT_NAME}
   ddmatchLib
 )
 endif()
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+  WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+  COMMAND ${PROJECT_NAME}
+)
