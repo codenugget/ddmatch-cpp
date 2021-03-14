@@ -5,6 +5,6 @@ if not exist build (
 )
 cd build
 if not exist ddmatch.sln (
-	cmake .. -D_CRT_SECURE_NO_WARNINGS=1
+	cmake ..
 )
 popd

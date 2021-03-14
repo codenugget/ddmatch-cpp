@@ -1,12 +1,12 @@
 High:
+[ ] Separate code from example app to ddmatchLib so we can test it
+[ ] Add gtest to the project structure
+[ ] Add gtest to failing function(s)
 [ ] Make it possible to run the simplest example
 [ ] Generalize to arbitrary width / height
 [x] Replace usage of dImage with TGrid<double> in DiffeoFunctionMatching
 [x] Replace usage of dImage with TGrid<double> in Diffeo_functions
 [x] Fix so it's possible to use const operator[] in TGrid TCube etc
-
-Medium:
-[ ] When we have something that works write rudimentary gtests
 
 Notes (low):
 [ ] Wrap vec<vec<double>> to something else for efficiency?

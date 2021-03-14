@@ -475,6 +475,9 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     //          self.tmpx, self.tmpy) # Compute composition phi o psi = phi o (1-eps*v)
     //np.copyto(self.phiinvx, self.tmpx)
     //np.copyto(self.phiinvy, self.tmpy)
+    if (k == 7) {
+      int dbg = 0;
+    }
     diffeo_compose_2d(m_phiinvx, m_phiinvy, m_psiinvx, m_psiinvy, m_tmpx, m_tmpy);
     m_phiinvx = m_tmpx;
     m_phiinvy = m_tmpy;

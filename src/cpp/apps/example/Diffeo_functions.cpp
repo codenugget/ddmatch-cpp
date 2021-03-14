@@ -263,7 +263,7 @@ bool eval_diffeo_2d(
 */
 }
 
-#define FIND_BUG
+//#define FIND_BUG
 #ifdef FIND_BUG
 #include <cstring>
 #include <fstream>
@@ -284,6 +284,42 @@ void dump_data(const dGrid& g, const char* filename) {
 }
 #endif
 
+// NOTE: boundary_conditions1(-2.16e-16, 64) will return invalid numbers... add to gtest
+// returns (i0,i1, i0shift, i1shift, fraction)
+std::tuple<int,int, double,double,double> boundary_conditions1(const double value, const int sz) {
+  int i0 = static_cast<int>(value);
+  int i1 = i0 + 1;
+  double i0_shift = 0.0;
+  double i1_shift = 0.0;
+  double frac = value - static_cast<double>(i0);
+  // TODO: check that this holds for c++!
+  // If frac_dx is negative it means that xphi is negative, so x0_idx
+  // is larger than xphi. We then reduce x0_idx and x1_idx by 1 and
+  // after that impose the periodic boundary conditions.
+  if (frac < 0 or i0 < 0) {
+    frac += 1.0;
+    i0 -= 1;
+    i1 -= 1;
+    i0 %= sz;
+    i0_shift = -float(sz); // # Should use floor_divide here instead.
+    if (i1 < 0) {
+      i1 %= sz;
+      i1_shift = -float(sz);
+    }
+  }
+  else if (i0 >= sz) {
+    i0 %= sz;
+    i1 %= sz;
+    i0_shift = float(sz);
+    i1_shift = float(sz);
+  }
+  else if (i1 >= sz) {
+    i1 %= sz;
+    i1_shift = float(sz);
+  }
+  return { i0, i1, i0_shift, i1_shift, frac };
+}
+
 bool diffeo_compose_2d(
   const dGrid& xpsi, const dGrid& ypsi,
   const dGrid& xphi, const dGrid& yphi,
@@ -297,7 +333,6 @@ bool diffeo_compose_2d(
   int h = xpsi.rows();
   if (w != h) // only allow square sizes now
     return false;
-  int s = w;
 
 #ifdef FIND_BUG
   dump_data(xpsi, "xpsi.dat");
@@ -311,59 +346,11 @@ bool diffeo_compose_2d(
 #if 1
   for(int py = 0; py < h; ++py) {
     for(int px = 0; px < w; ++px) {
-      int x0_idx = int(xphi[py][px]);
-      int y0_idx = int(yphi[py][px]);
-      int x1_idx = x0_idx;
-      int y1_idx = y0_idx;
-      double frac_dx = xphi[py][px] - double(x0_idx);
-      double frac_dy = yphi[py][px] - double(y0_idx);
-      double x0_shift = 0.0;
-      double x1_shift = 0.0;
-      double y0_shift = 0.0;
-      double y1_shift = 0.0;
-      // Id frac_dx is negative it means that xphi is negative, so x0_idx
-      // is larger than xphi. We then reduce x0_idx and x1_idx by 1 and
-      // after that impose the periodic boundary conditions.
-      if (frac_dx < 0 or x0_idx < 0) {
-        frac_dx += 1.0;
-        x0_idx -= 1;
-        x1_idx -= 1;
-        x0_idx %= s; // QUESTION: replace with 'w'?
-        x0_shift = -float(s); // # Should use floor_divide here instead.
-        if (x1_idx < 0) {
-          x1_idx %= s;
-          x1_shift = -float(s);
-        }
-      } else if (x0_idx >= s) {
-        x0_idx %= s;
-        x1_idx %= s;
-        x0_shift = float(s);
-        x1_shift = float(s);
-      } else if (x1_idx >= s) {
-        x1_idx %= s;
-        x1_shift = float(s);
+      if (px == 21) {
+        int dbg = 0;
       }
-
-      if (frac_dy < 0 or y0_idx < 0) {
-        frac_dy += 1.0;
-        y0_idx -= 1;
-        y1_idx -= 1;
-        y0_idx %= s; // QUESTION: replace with 'h'?
-        y0_shift = -float(s); // # Should use floor_divide here instead.
-        if (y1_idx < 0) {
-          y1_idx %= s;
-          y1_shift = -float(s);
-        }
-      } else if (y0_idx >= s) {
-        y0_idx %= s;
-        y1_idx %= s;
-        y0_shift = float(s);
-        y1_shift = float(s);
-      } else if (y1_idx >= s) {
-        y1_idx %= s;
-        y1_shift = float(s);
-      }
-
+      const auto [x0_idx, x1_idx, x0_shift, x1_shift, frac_dx] = boundary_conditions1(xphi[py][px], w);
+      const auto [y0_idx, y1_idx, y0_shift, y1_shift, frac_dy] = boundary_conditions1(yphi[py][px], h);
       // NOTE: commented lines makes it crash (index out of bounds)
       double val = 0;
       val += (xpsi[y0_idx][x0_idx] + x0_shift) * (1.-frac_dx) * (1.-frac_dy);

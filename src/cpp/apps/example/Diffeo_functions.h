@@ -28,3 +28,5 @@ bool image_gradient_2d_forward(const dGrid& I, dGrid& dIdx, dGrid& dIdy);
 bool divergence_2d(const dGrid&  vx, const dGrid& vy, dGrid& divv);
 
 bool jacobian_2d_forward(const dGrid& xphi, const dGrid& yphi, dGrid& jac);
+
+std::tuple<int, int, double, double, double> boundary_conditions1(const double value, const int sz);
