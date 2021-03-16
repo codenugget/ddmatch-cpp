@@ -431,7 +431,7 @@ TEST(TGrid_Test, operator_scale) {
       EXPECT_EQ(v[i], 0);
   }
   {
-    const float cEpsilon = 1e-7;
+    const float cEpsilon = 1e-7f;
     float scale = 1.23f;
     TGrid<float> a(2,2, 100.0f);
     TGrid<float> b = scale * a;
