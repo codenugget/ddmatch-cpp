@@ -1,10 +1,10 @@
 High:
-[ ] Add test cases for core lib
-[ ] Add many more test cases to make sure code conversion works as expected
-[ ] Pythons modulo difers from c++, need to do: ((x % n) + n) % n to make them the work same
+[ ] Add more test cases to make sure code conversion works as expected
+[ ] Pythons modulo differs from c++, need to do: ((x % n) + n) % n to make them the work same
     Maybe just add n if result is negative for performance reasons?
 [ ] Make it possible to run the simplest example
 [ ] Generalize to arbitrary width / height
+[x] Add test cases for core lib
 [x] Add gtest to failing function(s)
 [x] Add gtest to the project structure
 [x] Separate code from example app to ddmatchLib so we can test it
