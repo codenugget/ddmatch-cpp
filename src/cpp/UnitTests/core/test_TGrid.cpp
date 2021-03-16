@@ -185,4 +185,258 @@ TEST(TGrid_Test, copyto_TVecRef_stdvec) {
   }
 }
 
-// elem_func
+TEST(TGrid_Test, elem_func) {
+  const double cEpsilon = 1e-10;
+  {
+    const auto f = [](const double v){ return 2*v; };
+    TGrid<double> grid(3,3, 1.0);
+    TGrid<double> res = elem_func(grid, f);
+    EXPECT_EQ(res.rows(), 3);
+    EXPECT_EQ(res.cols(), 3);
+    EXPECT_EQ(res.size(), 9);
+    const double* v = res.data();
+    for (int i = 0; i < res.size(); ++i)
+      EXPECT_NEAR(v[i], 2.0, cEpsilon);
+  }
+}
+
+TEST(TGrid_Test, operator_add) {
+  const double cEpsilonAdd = 1e-10;
+  {
+    TGrid<double> a(3,3, 1.0);
+    TGrid<double> b(3,3, 2.0);
+    TGrid<double> c = a + b;
+    const double* v = c.data();
+    for(int i = 0; i < c.size(); ++i)
+      EXPECT_NEAR(v[i], 3.0, cEpsilonAdd);
+  }
+
+  {
+    TGrid<double> a(3,3, 1.0);
+    TGrid<double> b(4,3, 2.0);
+    EXPECT_DEATH( {
+      TGrid<double> c = a + b;
+    }, "");
+  }
+  {
+    TGrid<double> a(3,3, 1.0);
+    TGrid<double> b(3,4, 2.0);
+    EXPECT_DEATH( {
+      TGrid<double> c = a + b;
+    }, "");
+  }
+  {
+    TGrid<double> a(3,3, 1.0);
+    TGrid<double> b(4,4, 2.0);
+    EXPECT_DEATH( {
+      TGrid<double> c = a + b;
+    }, "");
+  }
+
+  {
+    TGrid<double> a(4,3, 1.0);
+    TGrid<double> b(3,3, 2.0);
+    EXPECT_DEATH( {
+      TGrid<double> c = a + b;
+    }, "");
+  }
+  {
+    TGrid<double> a(3,4, 1.0);
+    TGrid<double> b(3,3, 2.0);
+    EXPECT_DEATH( {
+      TGrid<double> c = a + b;
+    }, "");
+  }
+  {
+    TGrid<double> a(4,4, 1.0);
+    TGrid<double> b(3,3, 2.0);
+    EXPECT_DEATH( {
+      TGrid<double> c = a + b;
+    }, "");
+  }
+}
+
+TEST(TGrid_Test, operator_subtract) {
+  const double cEpsilonSub = 1e-10;
+  {
+    TGrid<double> a(3,3, 1.0);
+    TGrid<double> b(3,3, 2.0);
+    TGrid<double> c = a - b;
+    const double* v = c.data();
+    for(int i = 0; i < c.size(); ++i)
+      EXPECT_NEAR(v[i], -1.0, cEpsilonSub);
+  }
+
+  {
+    TGrid<double> a(3,3, 1.0);
+    TGrid<double> b(4,3, 2.0);
+    EXPECT_DEATH( {
+      TGrid<double> c = a - b;
+    }, "");
+  }
+  {
+    TGrid<double> a(3,3, 1.0);
+    TGrid<double> b(3,4, 2.0);
+    EXPECT_DEATH( {
+      TGrid<double> c = a - b;
+    }, "");
+  }
+  {
+    TGrid<double> a(3,3, 1.0);
+    TGrid<double> b(4,4, 2.0);
+    EXPECT_DEATH( {
+      TGrid<double> c = a - b;
+    }, "");
+  }
+
+  {
+    TGrid<double> a(4,3, 1.0);
+    TGrid<double> b(3,3, 2.0);
+    EXPECT_DEATH( {
+      TGrid<double> c = a - b;
+    }, "");
+  }
+  {
+    TGrid<double> a(3,4, 1.0);
+    TGrid<double> b(3,3, 2.0);
+    EXPECT_DEATH( {
+      TGrid<double> c = a - b;
+    }, "");
+  }
+  {
+    TGrid<double> a(4,4, 1.0);
+    TGrid<double> b(3,3, 2.0);
+    EXPECT_DEATH( {
+      TGrid<double> c = a - b;
+    }, "");
+  }
+}
+
+
+TEST(TGrid_Test, sum) {
+  double cEpsilonSum = 1e-10;
+  {
+    TGrid<double> a;
+    EXPECT_EQ(sum(a), 0.0);
+  }
+  {
+    TGrid<double> a(3,3, 2.0);
+    EXPECT_NEAR(sum(a), 18.0, cEpsilonSum);
+  }
+  {
+    TGrid<double> a(2,2, 1.0);
+    a[0][1] = -1.0;
+    a[1][0] = -1.0;
+    EXPECT_NEAR(sum(a), 0.0, cEpsilonSum);
+  }
+}
+
+TEST(TGrid_Test, elem_set2) {
+  const auto func_add = [](const int v1, const int v2){ return v1 + v2; };
+  {
+    TGrid<int> res;
+    TGrid<int> a(2,2, 1);
+    TGrid<int> b(2,2, 1);
+    EXPECT_FALSE(elem_set(res, a, b, func_add));
+  }
+  {
+    TGrid<int> res(2,2,-1);
+    TGrid<int> a(2,2, 1);
+    TGrid<int> b(2,2, 1);
+    EXPECT_TRUE(elem_set(res, a, b, func_add));
+    const int* v = res.data();
+    for (int i = 0; i < res.size(); ++i)
+      EXPECT_EQ(v[i], 2);
+  }
+}
+
+TEST(TGrid_Test, elem_set4) {
+  const auto func_add = [](const int v1, const int v2, const int v3, const int v4){ return v1 + v2 + v3 + v4; };
+  {
+    TGrid<int> res(2,2,-1);
+    TGrid<int> a(2,2, 1);
+    TGrid<int> b(2,2, 1);
+    TGrid<int> c(2,2, 1);
+    TGrid<int> d(3,2, 1);
+    EXPECT_FALSE(elem_set(res, a, b, c, d, func_add));
+  }
+  {
+    TGrid<int> res(2,2,-1);
+    TGrid<int> a(2,2, 1);
+    TGrid<int> b(2,2, 1);
+    TGrid<int> c(2,2, 1);
+    TGrid<int> d(2,2, 1);
+    EXPECT_TRUE(elem_set(res, a, b, c, d, func_add));
+    const int* v = res.data();
+    for (int i = 0; i < res.size(); ++i)
+      EXPECT_EQ(v[i], 4);
+  }
+}
+
+TEST(TGrid_Test, elem_add) {
+  const auto func_add = [](const int v1, const int v2){ return v1 + v2; };
+  {
+    TGrid<int> res;
+    TGrid<int> a(2,2, 1);
+    TGrid<int> b(3,2, 1);
+    EXPECT_FALSE(elem_add(res, a, b, func_add));
+  }
+  {
+    TGrid<int> res(2,2,-1);
+    TGrid<int> a(2,2, 1);
+    TGrid<int> b(2,2, 1);
+    EXPECT_TRUE(elem_add(res, a, b, func_add));
+    const int* v = res.data();
+    for (int i = 0; i < res.size(); ++i)
+      EXPECT_EQ(v[i], 1);
+  }
+
+}
+
+TEST(TGrid_Test, operator_multiply) {
+  {
+    TGrid<int> a(2,2, 1);
+    TGrid<int> b(3,2, 1);
+    EXPECT_DEATH({
+      TGrid<int> c = a * b;
+    }, "");
+  }
+  {
+    TGrid<int> a(3,2, 3);
+    TGrid<int> b(3,2, 2);
+    TGrid<int> c = a * b;
+    const int* v = c.data();
+    for(int i = 0; i < c.size(); ++i)
+      EXPECT_EQ(v[i], 6);
+  }
+}
+
+TEST(TGrid_Test, operator_negate) {
+  {
+    TGrid<int> a(2,2, 11);
+    TGrid<int> b = -a;
+    const int* v = b.data();
+    for(int i = 0; i < b.size(); ++i)
+      EXPECT_EQ(v[i], -11);
+  }
+}
+
+TEST(TGrid_Test, operator_scale) {
+  {
+    int scale = 0;
+    TGrid<int> a(2,2, 123);
+    TGrid<int> b = scale * a;
+    const int* v = b.data();
+    for(int i = 0; i < b.size(); ++i)
+      EXPECT_EQ(v[i], 0);
+  }
+  {
+    const float cEpsilon = 1e-7;
+    float scale = 1.23f;
+    TGrid<float> a(2,2, 100.0f);
+    TGrid<float> b = scale * a;
+    const float* v = b.data();
+    for(int i = 0; i < b.size(); ++i)
+      EXPECT_NEAR(v[i], 123.0f, cEpsilon);
+  }
+}

@@ -221,7 +221,6 @@ typedef TCube<float> fCube;
 typedef TCube<int> iCube;
 
 
-// double check how methods below should behave for arbitrary shapes
 template<typename T>
 TGrid<T> values_like(const TGrid<T>& in, const T fill_value)
 {
@@ -261,8 +260,6 @@ bool copyto(TVecRef<T> dst, const std::vector<T>& src) {
     d[i] = s[i];
   return true;
 }
-
-
 
 template<typename T, typename Predicate>
 TGrid<T> elem_func(const TGrid<T>& g, Predicate f) {
@@ -315,7 +312,7 @@ T sum(const TGrid<T>& vals) {
 
 template<typename T, typename Pred>
 bool elem_set(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, Pred f) {
-  if (!res.is_same_shape(a) || res.is_same_shape(b))
+  if (!res.is_same_shape(a) || !res.is_same_shape(b))
     return false;
   int n = res.size();
   T* dst = res.data();
@@ -323,19 +320,6 @@ bool elem_set(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, Pred f) {
   const T* src_b = b.data();
   for (int i = 0; i < n; ++i)
       dst[i] = f(src_a[i], src_b[i]);
-  return true;
-}
-
-template<typename T, typename Pred>
-bool elem_add(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, Pred f) {
-  if (!res.is_same_shape(a) || res.is_same_shape(b))
-    return false;
-  int n = res.size();
-  T* dst = res.data();
-  const T* src_a = a.data();
-  const T* src_b = b.data();
-  for (int i = 0; i < n; ++i)
-      dst[i] += f(src_a[i], src_b[i]);
   return true;
 }
 
@@ -351,6 +335,19 @@ bool elem_set(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, const TGrid<T
   const T* src_d = b.data();
   for (int i = 0; i < n; ++i)
       dst[i] = f(src_a[i], src_b[i], src_c[i], src_d[i]);
+  return true;
+}
+
+template<typename T, typename Pred>
+bool elem_add(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, Pred f) {
+  if (!res.is_same_shape(a) || !res.is_same_shape(b))
+    return false;
+  int n = res.size();
+  T* dst = res.data();
+  const T* src_a = a.data();
+  const T* src_b = b.data();
+  for (int i = 0; i < n; ++i)
+      dst[i] += f(src_a[i], src_b[i]);
   return true;
 }
 
@@ -378,7 +375,7 @@ TGrid<T> operator-(const TGrid<T> &a) {
 }
 
 template<typename T>
-TGrid<T> operator*(const double scale, const TGrid<T> &a) {
+TGrid<T> operator*(const T scale, const TGrid<T> &a) {
   TGrid<T> ret(a);
   int n = ret.size();
   T* dst = ret.data();
