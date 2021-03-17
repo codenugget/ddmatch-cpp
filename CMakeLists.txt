@@ -15,6 +15,11 @@ set(CMAKE_CXX_STANDARD 20)
 
 include_directories(
 	"src/cpp"
+	"external/include"
+)
+
+link_directories(
+	"external/lib64"
 )
 
 add_subdirectory(src)
