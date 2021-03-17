@@ -1,4 +1,10 @@
 High:
+[ ] Add properly implemented FFT / iFFT
+  [x] Fallback to dft
+  [ ] power of 2
+  [ ] 8-point pad 0
+  [ ] chirp-z
+[ ] Add test cases for dft/idft, fft/ifft
 [ ] Add test cases for TCube
 [ ] Add more test cases to make sure code conversion works as expected
 [ ] Pythons modulo differs from c++, need to do: ((x % n) + n) % n to make them the work same
