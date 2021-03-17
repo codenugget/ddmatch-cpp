@@ -5,6 +5,7 @@ High:
     Maybe just add n if result is negative for performance reasons?
 [ ] Make it possible to run the simplest example
 [ ] Generalize to arbitrary width / height
+[x] Fix DFT / iDFT
 [x] Add test cases for core lib
 [x] Add gtest to failing function(s)
 [x] Add gtest to the project structure

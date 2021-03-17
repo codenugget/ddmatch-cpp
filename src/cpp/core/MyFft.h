@@ -5,7 +5,7 @@
 
 #include "MyArrays.h"
 
-inline std::vector<std::complex<double>> dft(const std::vector<double>& x) {
+inline std::vector<std::complex<double>> dft(const std::vector<std::complex<double>>& x) {
 	int N = static_cast<int>(x.size());
 	TGrid<std::complex<double>> grid(N,N,{0.0,0.0});
 	for(int r = 0; r < N; ++r) {
@@ -25,7 +25,6 @@ inline std::vector<std::complex<double>> dft(const std::vector<double>& x) {
 
 
 inline std::vector<std::complex<double>> idft(
-	//const std::vector<double>& x
 	const std::vector<std::complex<double>>& x
 	) {
 	int N = static_cast<int>(x.size());
@@ -37,12 +36,10 @@ inline std::vector<std::complex<double>> idft(
 		}
 	}
 	std::vector<std::complex<double>> ret(N, {0.0, 0.0});
-	double invsqrtN = 1.0/sqrt(N);
 	for(int n = 0; n < N; ++n) {
-		for(int k = -N/2 +1, ik=0; k < N/2; ++k, ++ik) {
-			ret[n] += x[ik] * grid[n][ik];
-		}
-		ret[n] *= invsqrtN;
+		for(int k=0; k < N; ++k)
+			ret[n] += x[k] * grid[n][k];
+		ret[n] /= static_cast<double>(N);
 	}
 	return ret;
 }
