@@ -4,7 +4,8 @@
 
 int main(int argc, char** argv)
 {
-  std::vector<std::complex<double>> v{1,4,3,2};
+  std::vector<std::complex<double>> v{{1,-1},{4,4},{-3,3},{-2,-2}};
+  //std::vector<std::complex<double>> v{{1,0},{4,0},{3,0},{2,0}};
   std::cout << "orig\n";
   for(auto e : v)
     std::cout << e << "\n";

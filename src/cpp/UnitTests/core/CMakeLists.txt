@@ -6,6 +6,7 @@ endif()
 
 set(src
   main.cpp
+  test_fft.cpp
   test_TCube.cpp
   test_TGrid.cpp
 )
