@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cmath>
 #include <complex>
 
@@ -52,6 +53,18 @@ inline std::vector<std::complex<double>> fft_8pt0(const std::vector<std::complex
 	return {};
 }
 
+
+// Algorithm S1 (TODO)
+
+// Algorithm S2
+inline std::vector<std::complex<double>> ZeroPad(const std::vector<std::complex<double>>& x, int n) {
+	int m = static_cast<int>(x.size());
+	assert(m <= n);
+	std::vector<std::complex<double>> x_hat(n, {0.0, 0.0});
+	for (int k = 0; k < m; ++k)
+		x_hat[k] = x[k];
+	return x_hat;
+}
 /*
 ZeroPad(x, n) {
 	m = length(x);
@@ -65,7 +78,9 @@ ZeroPad(x, n) {
 	}
 	return x_hat;
 }
+*/
 
+/*
 
 
 ToeplitzMultiplyE(r,c,x){

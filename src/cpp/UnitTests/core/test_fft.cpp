@@ -72,3 +72,47 @@ TEST(fft_Test, dft_idft_complex) {
 		EXPECT_NEAR(restored_values[3].imag(),-2, cTolerance);
 	}
 }
+
+TEST(fft_Test, ZeroPad) {
+	{
+		std::vector<std::complex<double>> x {{1.0, 0.0}, {-1.0, 1.0}, {0.0, -1.0}};
+		std::vector<std::complex<double>> y = ZeroPad(x, 5);
+		ASSERT_EQ(y.size(), 5);
+		EXPECT_EQ(y[0].real(), 1.0);
+		EXPECT_EQ(y[0].imag(), 0.0);
+
+		EXPECT_EQ(y[1].real(), -1.0);
+		EXPECT_EQ(y[1].imag(), 1.0);
+
+		EXPECT_EQ(y[2].real(), 0.0);
+		EXPECT_EQ(y[2].imag(), -1.0);
+
+		EXPECT_EQ(y[3].real(), 0.0);
+		EXPECT_EQ(y[3].imag(), 0.0);
+
+		EXPECT_EQ(y[4].real(), 0.0);
+		EXPECT_EQ(y[4].imag(), 0.0);
+	}
+	{
+		std::vector<std::complex<double>> x {{1.0, 0.0}, {-1.0, 1.0}, {0.0, -1.0}};
+		std::vector<std::complex<double>> y = ZeroPad(x, 3);
+		ASSERT_EQ(y.size(), 3);
+		EXPECT_EQ(y[0].real(), 1.0);
+		EXPECT_EQ(y[0].imag(), 0.0);
+
+		EXPECT_EQ(y[1].real(), -1.0);
+		EXPECT_EQ(y[1].imag(), 1.0);
+
+		EXPECT_EQ(y[2].real(), 0.0);
+		EXPECT_EQ(y[2].imag(), -1.0);
+	}
+}
+
+TEST(fft_Test, ZeroPad_crash) {
+	{
+		std::vector<std::complex<double>> x {{1.0, 0.0}, {-1.0, 1.0}, {0.0, -1.0}};
+		EXPECT_DEATH({
+			auto y = ZeroPad(x, 2);
+		}, "");
+	}
+}
