@@ -54,18 +54,6 @@ inline std::vector<std::complex<double>> fft_8pt0(const std::vector<std::complex
 }
 
 
-// Algorithm S1: Multiply a Toeplitz matri by a vector using circulant embedding. Runs in O(n log n) time.
-/*ToeplitzMultiplyE(r, c, x) {
-	// Compute the product y = Tx of a Toeplitz matrix T
-	// and a vector x, where T is specified by its first row
-	// r = (r[0], r[1], r[2], . . . , r[N−1]) and its first column
-	// c = (c[0], c[1], c[2], . . . , c[M−1]), where r[0] = c[0].
-	int N = static_cast<int>(r.size());
-	int M = static_cast<int>(c.size());
-	assert(r[0] == c[0]);
-	assert(static_cast<int>(x.size()) == N);
-}*/
-
 // Algorithm S2
 inline std::vector<std::complex<double>> ZeroPad(const std::vector<std::complex<double>>& x, int n) {
 	int m = static_cast<int>(x.size());
@@ -74,6 +62,47 @@ inline std::vector<std::complex<double>> ZeroPad(const std::vector<std::complex<
 	for (int k = 0; k < m; ++k)
 		x_hat[k] = x[k];
 	return x_hat;
+}
+
+// Algorithm S4: Multiply a circulant matrix by a vector
+inline std::vector<std::complex<double>> CirculantMultiply(std::vector<std::complex<double>>& c, std::vector<std::complex<double>>& x) {
+	return {};
+}
+
+// Algorithm S1: Multiply a Toeplitz matri by a vector using circulant embedding. Runs in O(n log n) time.
+inline std::vector<std::complex<double>> ToeplitzMultiplyE(std::vector<std::complex<double>>& r, std::vector<std::complex<double>>& c, std::vector<std::complex<double>>& x) {
+	// Compute the product y = Tx of a Toeplitz matrix T
+	// and a vector x, where T is specified by its first row
+	// r = (r[0], r[1], r[2], . . . , r[N−1]) and its first column
+	// c = (c[0], c[1], c[2], . . . , c[M−1]), where r[0] = c[0].
+	int N = static_cast<int>(r.size());
+	int M = static_cast<int>(c.size());
+	assert(r[0] == c[0]);
+	assert(static_cast<int>(x.size()) == N);
+
+	// n=2^ceil(log2(M+N-1));
+	int raise = static_cast<int>(ceil(log2(M + N - 1)));
+	int n = 1 << raise;
+	// Form an array c_hat by concatenating c, n − (M+N−1)
+	// zeros, and the reverse of the last N−1 elements of r.
+	//c_hat = ZeroArray(n);
+	std::vector<std::complex<double>> c_hat(n, {0.0, 0.0});
+	for (int k = 0; k < M; ++k)
+		c_hat[k] = c[k];
+	for (int k = 1; k < N; ++k)
+		c_hat[n-k] = r[k];
+	// c_hat= (c[0], c[1],..., c[M−1], 0,..., 0,r[N−1],...,r[2],r[1]);
+	auto x_hat = ZeroPad(x, n);										// call Algorithm S2
+	auto y_hat = CirculantMultiply(c_hat, x_hat); // call Algorithm S4
+
+ 	// The result is the first M elements of y_hat.
+	std::vector<std::complex<double>> y(M);
+	for(int k = 0; k < M; ++k)
+		y[k] = y_hat[k];
+
+	return y;
+	//y_hat.resize(M);
+	//return y_hat;
 }
 
 /*
