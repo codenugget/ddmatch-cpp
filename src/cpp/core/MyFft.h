@@ -54,7 +54,17 @@ inline std::vector<std::complex<double>> fft_8pt0(const std::vector<std::complex
 }
 
 
-// Algorithm S1 (TODO)
+// Algorithm S1: Multiply a Toeplitz matri by a vector using circulant embedding. Runs in O(n log n) time.
+/*ToeplitzMultiplyE(r, c, x) {
+	// Compute the product y = Tx of a Toeplitz matrix T
+	// and a vector x, where T is specified by its first row
+	// r = (r[0], r[1], r[2], . . . , r[N−1]) and its first column
+	// c = (c[0], c[1], c[2], . . . , c[M−1]), where r[0] = c[0].
+	int N = static_cast<int>(r.size());
+	int M = static_cast<int>(c.size());
+	assert(r[0] == c[0]);
+	assert(static_cast<int>(x.size()) == N);
+}*/
 
 // Algorithm S2
 inline std::vector<std::complex<double>> ZeroPad(const std::vector<std::complex<double>>& x, int n) {
@@ -65,24 +75,8 @@ inline std::vector<std::complex<double>> ZeroPad(const std::vector<std::complex<
 		x_hat[k] = x[k];
 	return x_hat;
 }
-/*
-ZeroPad(x, n) {
-	m = length(x);
-	assert( m <= n );
-	x_hat = EmptyArray(n);
-	for (int k = 0; k < M; ++k) {
-		x_hat[k] = x[k];
-	}
-	for (int k = M; k < N; ++k) {
-		x_hat[k] = 0;
-	}
-	return x_hat;
-}
-*/
 
 /*
-
-
 ToeplitzMultiplyE(r,c,x){
 	// compute the product y = Tx of a Toeplitz matrix T
 	// and a vector x, where T is specified by its first row
