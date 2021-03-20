@@ -1,16 +1,16 @@
 High:
-[ ] Add properly implemented FFT / iFFT
-  [x] Fallback to dft
-  [ ] power of 2
-  [ ] 8-point pad 0
-  [ ] chirp-z
+[ ] chirp-z
 [ ] Add test cases for dft/idft, fft/ifft
+[ ] Add test cases for ZeroPad?
+[ ] Add test cases for CirculantMultiply?
+[ ] Add test cases for ToeplitzMultiplyE?
 [ ] Add test cases for TCube
 [ ] Add more test cases to make sure code conversion works as expected
 [ ] Pythons modulo differs from c++, need to do: ((x % n) + n) % n to make them the work same
     Maybe just add n if result is negative for performance reasons?
 [ ] Make it possible to run the simplest example
 [ ] Generalize to arbitrary width / height
+[x] Add properly implemented FFT / iFFT
 [x] Fix DFT / iDFT
 [x] Add test cases for core lib
 [x] Add gtest to failing function(s)

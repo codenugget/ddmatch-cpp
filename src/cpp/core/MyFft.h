@@ -43,33 +43,70 @@ inline std::vector<std::complex<double>> idft(const std::vector<std::complex<dou
 	return ret;
 }
 
-// requires the size of x to be a power of 2
-inline std::vector<std::complex<double>> fft_pow2(const std::vector<std::complex<double>>& x) {
-	return {};
-}
-
-// 8-point FFT, with 0-padding
-inline std::vector<std::complex<double>> fft_8pt0(const std::vector<std::complex<double>>& x) {
-	return {};
-}
-
-
 // Algorithm S2
 inline std::vector<std::complex<double>> ZeroPad(const std::vector<std::complex<double>>& x, int n) {
 	int m = static_cast<int>(x.size());
 	assert(m <= n);
-	std::vector<std::complex<double>> x_hat(n, {0.0, 0.0});
-	for (int k = 0; k < m; ++k)
-		x_hat[k] = x[k];
+	std::vector<std::complex<double>> x_hat = x;
+	x_hat.resize(n, {0.0, 0.0});
 	return x_hat;
 }
 
+// Algorithm S5: Runs in O(n log n) time.
 inline std::vector<std::complex<double>> FFT(const std::vector<std::complex<double>>& x) {
-	return {};
+	int n = static_cast<int>(x.size());
+	if (n == 1)
+		return x;
+	int nodd = n / 2 + ((n&1) ? 1 : 0);
+	std::vector<std::complex<double>> xe, xo;
+	xe.reserve(n / 2);
+	xo.reserve(nodd);
+	bool even = true;
+	for(auto e : x) {
+		if (even)
+			xe.push_back(e);
+		else
+			xo.push_back(e);
+		even = !even;
+	}
+
+	auto y_p = FFT(xe);
+	auto y_pp = FFT(xo);
+	std::vector<std::complex<double>> y(n);
+	for(int k = 0; k < n/2; ++k) {
+		std::complex w = std::exp(std::complex(0.0, -2*M_PI*double(k)/double(n)));
+		y[k]       = y_p[k] + w * y_pp[k];
+		y[k+(n/2)] = y_p[k] - w * y_pp[k];
+	}
+	return y;
 }
 
-inline std::vector<std::complex<double>> IFFT(const std::vector<std::complex<double>>& x) {
-	return {};
+// Algorithm S6: Runs in O(n log n) time.
+inline std::vector<std::complex<double>> IFFT(const std::vector<std::complex<double>>& y) {
+	int n = static_cast<int>(y.size());
+	if (n == 1)
+		return y;
+	int nodd = n / 2 + ((n&1) ? 1 : 0);
+	std::vector<std::complex<double>> ye, yo;
+	ye.reserve(n / 2);
+	yo.reserve(nodd);
+	bool even = true;
+	for(auto e : y) {
+		if (even)
+			ye.push_back(e);
+		else
+			yo.push_back(e);
+		even = !even;
+	}
+	auto x_p = IFFT(ye);
+	auto x_pp = IFFT(yo);
+	std::vector<std::complex<double>> x(n);
+	for(int k = 0; k < n/2; ++k) {
+		std::complex w = std::exp(std::complex(0.0, 2*M_PI*double(k)/double(n)));
+		x[k]       = (x_p[k] + w * x_pp[k])/2.0;
+		x[k+(n/2)] = (x_p[k] - w * x_pp[k])/2.0;
+	}
+	return x;
 }
 
 // Algorithm S4: Multiply a circulant matrix by a vector
@@ -89,8 +126,8 @@ inline std::vector<std::complex<double>> CirculantMultiply(std::vector<std::comp
 	return y;
 }
 
-// Algorithm S1: Multiply a Toeplitz matri by a vector using circulant embedding. Runs in O(n log n) time.
-inline std::vector<std::complex<double>> ToeplitzMultiplyE(std::vector<std::complex<double>>& r, std::vector<std::complex<double>>& c, std::vector<std::complex<double>>& x) {
+// Algorithm S1: Multiply a Toeplitz matrix by a vector using circulant embedding. Runs in O(n log n) time.
+inline std::vector<std::complex<double>> ToeplitzMultiplyE(const std::vector<std::complex<double>>& r, const std::vector<std::complex<double>>& c, const std::vector<std::complex<double>>& x) {
 	// Compute the product y = Tx of a Toeplitz matrix T
 	// and a vector x, where T is specified by its first row
 	// r = (r[0], r[1], r[2], . . . , r[N−1]) and its first column
@@ -120,11 +157,15 @@ inline std::vector<std::complex<double>> ToeplitzMultiplyE(std::vector<std::comp
 	for(int k = 0; k < M; ++k)
 		y[k] = y_hat[k];
 
-	return y;
 	//y_hat.resize(M);
 	//return y_hat;
+	return y;
 }
 
+// Algorithm S3: Multiply a Toeplitz matrix by a vector using Pustylnikov's decomposition. Runs in O(n log n) time.
+inline std::vector<std::complex<double>> ToeplitzMultiplyP(const std::vector<std::complex<double>>& r, const std::vector<std::complex<double>>& c, const std::vector<std::complex<double>>& x) {
+	return {};
+}
 /*
 ToeplitzMultiplyE(r,c,x){
 	// compute the product y = Tx of a Toeplitz matrix T
@@ -179,23 +220,7 @@ inline std::vector<std::complex<double>> fft_czt(const std::vector<std::complex<
 }
 */
 
-inline std::vector<std::complex<double>> fft(const std::vector<std::complex<double>>& x) {
-	// NOTES:
-	//   How should non-power of 2 resolutions be handled?
-	//   * evaluate dft directly
-	//   * 8-point FFT, with 0-padding
-	//   * chirp-z transform
-
-	// placeholder implementation is to use the dft until the proper fft is fixed
-	return dft(x);
-}
-
 // inverse chirp-z transform
 inline std::vector<std::complex<double>> ifft_czt(const std::vector<std::complex<double>>& x) {
 	return {};
-}
-
-inline std::vector<std::complex<double>> ifft(const std::vector<std::complex<double>>& x) {
-	// placeholder implementation is to use the idft until the proper fft is fixed
-	return idft(x);
 }
