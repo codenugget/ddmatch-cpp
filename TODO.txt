@@ -1,9 +1,10 @@
 High:
 [ ] chirp-z
 [ ] Add test cases for dft/idft, fft/ifft
-[ ] Add test cases for ZeroPad?
-[ ] Add test cases for CirculantMultiply?
-[ ] Add test cases for ToeplitzMultiplyE?
+[ ] Add test cases for ZeroPad
+[ ] Add test cases for CirculantMultiply
+[ ] Add test cases for ToeplitzMultiplyE
+[ ] Add test cases for ToeplitzMultiplyP
 [ ] Add test cases for TCube
 [ ] Add more test cases to make sure code conversion works as expected
 [ ] Pythons modulo differs from c++, need to do: ((x % n) + n) % n to make them the work same
