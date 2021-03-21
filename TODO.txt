@@ -1,7 +1,4 @@
 High:
-[ ] Seems ICZT contains errors
-[ ] chirp-z
-  [x] Evaluate W^(k^2/2), W^(-k^2/2) and A^(-k)
 [ ] Add test cases for CZT/ICZT
 [ ] Add test cases for dft/idft, fft/ifft
 [ ] Add test cases for ZeroPad
@@ -15,6 +12,9 @@ High:
     Maybe just add n if result is negative for performance reasons?
 [ ] Make it possible to run the simplest example
 [ ] Generalize to arbitrary width / height
+[x] chirp-z
+  [x] Evaluate W^(k^2/2), W^(-k^2/2) and A^(-k)
+[x] Seems ICZT contains errors
 [x] Add properly implemented FFT / iFFT
 [x] Fix DFT / iDFT
 [x] Add test cases for core lib
