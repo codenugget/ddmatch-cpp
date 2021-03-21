@@ -172,13 +172,25 @@ inline std::vector<std::complex<double>> ToeplitzMultiplyE(
 std::vector<std::complex<double>> SkewCirculantMultiply(
 	const std::vector<std::complex<double>>& c,
 	const std::vector<std::complex<double>>& x) {
-	return {};
+	int n = static_cast<int>(c.size());
+	assert(static_cast<int>(x.size() == n));
+	std::vector<std::complex<double>> c_hat(n);
+	std::vector<std::complex<double>> x_hat(n);
+	for(int k = 0; k < n; ++k) {
+		std::complex<double> H = std::exp(std::complex<double>(0.0, -M_PI * double(k) / double(n)));
+		c_hat[k] = c[k] * H; // c_hat = H * c
+		x_hat[k] = x[k] * H; // x_hat = H * x
+	}
+	auto y = CirculantMultiply(c_hat, x_hat); // call algorithm S4
+	for (int k = 0; k < n; ++k)
+		y[k] = y[k] * std::exp(std::complex<double>(0.0, M_PI * double(k) / double(n)));
+	return y;
 }
 
 // Algorithm S3: Multiply a Toeplitz matrix by a vector using Pustylnikov's decomposition. Runs in O(n log n) time.
 inline std::vector<std::complex<double>> ToeplitzMultiplyP(
 	const std::vector<std::complex<double>>& r,
-	std::vector<std::complex<double>>& c,
+	std::vector<std::complex<double>>& c, // NOTE: see if we can change to const reference later
 	const std::vector<std::complex<double>>& x) {
 	// Compute the product y = T x of a Toeplitz matrix T
 	// and a vector x where T is specified by its first row
@@ -210,28 +222,84 @@ inline std::vector<std::complex<double>> ToeplitzMultiplyP(
 	return y;
 }
 
-// chirp-z transform
-inline std::vector<std::complex<double>> fft_czt(const std::vector<std::complex<double>>& x, int M) {
-	return {};
-/*
-	int N = static_cast<int>(x.size()); //length(x);
-	std::vector<std::complex<double>> X(N, {0.0, 0.0}); // X = emptyarray(N);
-	std::vector<std::complex<double>> r(N, {0.0, 0.0}); // r = emptyarray(N);
-	std::vector<std::complex<double>> c(N, {0.0, 0.0}); // c = emptyarray(N);
-	for(int k = 0; k < N; ++i) {
-		X[k] = W^(k^2/2) * A^(-k) * x[k];
-		r[k] = W^(-k^2/2);
+// Algorithm 1. CZT Algorithm. Runs in O(n log n) time.
+// Te complex numbers A and W are parameters of the transform that defne the logarithmic spiral contour
+// and the locations of the samples on it
+inline std::vector<std::complex<double>> CZT(
+	const std::vector<std::complex<double>>& x,
+	const int M,
+	const std::complex<double> W,
+	const std::complex<double> A) {
+	// A = diag(A^-0, A^-1, ..., A^-(N-1))
+	int N = static_cast<int>(x.size());
+	std::vector<std::complex<double>> X(N);
+	std::vector<std::complex<double>> r(N);
+	std::vector<std::complex<double>> c(M);
+	for (int k = 0; k < N; ++k) {
+		//X[k] = W^(k^2/2) * A^(-k) * x[k];
+		X[k] = std::pow(W, k*k/2.0) * std::pow(A, -k) * x[k];
+		//r[k] = W^(-k^2/2);
+		r[k] = std::pow(W, -k*k/2.0); // NOTE: this expression should be possible to evaluated instead of storing it...
 	}
 	for (int k = 0; k < M; ++k) {
-		c[k] = W^(-k^2/2);
+		//c[k] = W^(-k^2/2);
+		c[k] = std::pow(W, -k*k/2.0); // NOTE: this expression should be possible to evaluated instead of storing it...
 	}
-	// after this length(X) = M
+	// After next line, Length(X) = M
 	X = ToeplitzMultiplyE(r, c, X);
 	for (int k = 0; k < M; ++k) {
-		X[k] =W^(k^2/2) * X[k];
+		//X[k] = W^(k^2/2) * X[k];
+		X[k] = std::pow(W, k*k/2.0) * X[k];
 	}
 	return X;
-*/
+}
+
+
+std::vector<std::complex<double>> ICZT(
+	const std::vector<std::complex<double>>& X,
+	const int N,
+	const std::complex<double> W,
+	const std::complex<double> A) {
+	assert(static_cast<int>(X.size()) == N);
+	int n = N;
+	std::vector<std::complex<double>> x(n);
+	for(int k = 0; k < n; ++k)
+		x[k] = std::pow(W, -k*k/2) * X[k];
+	// precompute the necessary polynomial products
+	std::vector<std::complex<double>> p(n);
+	p[0] = std::complex<double>(1.0, 0.0);
+	for(int k = 1; k < n; ++k)
+		p[k] = p[k-1] * (std::pow(W, k) - std::complex(1.0, 0.0));
+	// copute the genarating vector u
+	std::vector<std::complex<double>> u(n);
+	for(int k = 0; k < n; ++k)
+		u[k] = std::pow(-1, k) * std::pow(W, (2*k*k-(2*n-1)*k+n*(n-1))/2.0) / (p[n-k-1] * p[k]);
+	std::vector<std::complex<double>> z(n, {0.0, 0.0});
+
+	std::vector<std::complex<double>> u_hat(n);
+	u_hat[0] = {0.0, 0.0};
+	for (int k = 1; k < n; ++k)
+		u_hat[n-k] = u[k];
+	std::vector<std::complex<double>> u_tilde(n, {0.0, 0.0});
+	u_tilde[0] = u[0];
+
+	auto x_p = ToeplitzMultiplyE(u_hat, z, x);
+	x_p = ToeplitzMultiplyE(z, u_hat, x_p);
+	auto x_pp = ToeplitzMultiplyE(u, u_tilde, x);
+	x_pp = ToeplitzMultiplyE(u_tilde, u, x_pp);
+	for (int k = 0; k < n; ++k) {
+		x[k] = (x_pp[k] - x_p[k]) / u[0]; // subtract and divide by u0
+	}
+
+	for (int k = 0; k < n; ++k) {
+		x[k] = std::pow(A, k) * std::pow(W, -k*k/2.0) * x[k]; // multiply by A^-1 * Q^-1
+	}
+	return x;
+}
+
+// chirp-z transform (stub)
+inline std::vector<std::complex<double>> fft_czt(const std::vector<std::complex<double>>& x, int M) {
+	return {};
 }
 
 // inverse chirp-z transform

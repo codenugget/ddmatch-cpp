@@ -1,8 +1,12 @@
 High:
+[ ] Seems ICZT contains errors
 [ ] chirp-z
+  [x] Evaluate W^(k^2/2), W^(-k^2/2) and A^(-k)
+[ ] Add test cases for CZT/ICZT
 [ ] Add test cases for dft/idft, fft/ifft
 [ ] Add test cases for ZeroPad
 [ ] Add test cases for CirculantMultiply
+[ ] Add test cases for SkewCirculantMultiply
 [ ] Add test cases for ToeplitzMultiplyE
 [ ] Add test cases for ToeplitzMultiplyP
 [ ] Add test cases for TCube
