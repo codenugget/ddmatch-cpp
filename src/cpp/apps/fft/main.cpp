@@ -5,8 +5,8 @@
 
 int main(int argc, char** argv)
 {
-  //std::vector<std::complex<double>> orig{{1,-1},{4,4},{-3,3},{-2,-2}};
-  std::vector<std::complex<double>> orig{{1,0},{4,0},{3,0},{2,0}};
+  std::vector<std::complex<double>> orig{{1,-1},{4,4},{-3,3},{-2,-2}};
+  //std::vector<std::complex<double>> orig{{1,0},{4,0},{3,0},{2,0}};
   std::cout << "orig: ";
   for(auto e : orig)
     std::cout << e << ", ";
@@ -31,7 +31,7 @@ int main(int argc, char** argv)
 
 
 
-  int M = orig.size();
+  int M = (int)orig.size();
   std::complex<double> W = std::exp(std::complex(0.0, -2.0*M_PI/M));
   std::complex<double> A = std::complex(1.0, 0.0);
   auto r3 = CZT(orig, M, W, A);

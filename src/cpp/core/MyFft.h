@@ -7,6 +7,10 @@
 
 #include "MyArrays.h"
 
+#ifndef M_PI
+#define M_PI 3.1415926535897932384
+#endif
+
 inline std::vector<std::complex<double>> dft(const std::vector<std::complex<double>>& x) {
 	int N = static_cast<int>(x.size());
 	TGrid<std::complex<double>> grid(N,N,{0.0,0.0});
@@ -264,7 +268,7 @@ std::vector<std::complex<double>> ICZT(
 	int n = N;
 	std::vector<std::complex<double>> x(n);
 	for(int k = 0; k < n; ++k)
-		x[k] = std::pow(W, -k*k/2) * X[k];
+		x[k] = std::pow(W, -k*k/2.0) * X[k];
 	// precompute the necessary polynomial products
 	std::vector<std::complex<double>> p(n);
 	p[0] = std::complex<double>(1.0, 0.0);
@@ -273,7 +277,7 @@ std::vector<std::complex<double>> ICZT(
 	// copute the genarating vector u
 	std::vector<std::complex<double>> u(n);
 	for(int k = 0; k < n; ++k)
-		u[k] = std::pow(-1, k) * std::pow(W, (2*k*k-(2*n-1)*k+n*(n-1))/2.0) / (p[n-k-1] * p[k]);
+		u[k] = std::pow(-1, k) * std::pow(W, (2.0*k*k-(2.0*n-1)*k+n*(n-1))/2.0) / (p[n-k-1] * p[k]);
 	std::vector<std::complex<double>> z(n, {0.0, 0.0});
 
 	std::vector<std::complex<double>> u_hat(n);
