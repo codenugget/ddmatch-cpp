@@ -57,7 +57,7 @@ inline std::vector<std::complex<double>> ZeroPad(const std::vector<std::complex<
 	return x_hat;
 }
 
-// Algorithm S5: Runs in O(n log n) time.
+// Algorithm S5: Runs in O(n log n) time. NOTE: only works when length(x) is a power of two
 inline std::vector<std::complex<double>> FFT(const std::vector<std::complex<double>>& x) {
 	int n = static_cast<int>(x.size());
 	if (n == 1)
@@ -258,7 +258,6 @@ inline std::vector<std::complex<double>> CZT(
 	return X;
 }
 
-
 std::vector<std::complex<double>> ICZT(
 	const std::vector<std::complex<double>>& X,
 	const int N,
@@ -299,14 +298,4 @@ std::vector<std::complex<double>> ICZT(
 		x[k] = std::pow(A, k) * std::pow(W, -k*k/2.0) * x[k]; // multiply by A^-1 * Q^-1
 	}
 	return x;
-}
-
-// chirp-z transform (stub)
-inline std::vector<std::complex<double>> fft_czt(const std::vector<std::complex<double>>& x, int M) {
-	return {};
-}
-
-// inverse chirp-z transform
-inline std::vector<std::complex<double>> ifft_czt(const std::vector<std::complex<double>>& x) {
-	return {};
 }
