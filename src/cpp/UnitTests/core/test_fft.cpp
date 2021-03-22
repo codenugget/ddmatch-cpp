@@ -3,11 +3,11 @@
 #include "core/MyFft.h"
 
 
-TEST(fft_Test, dft_idft_real) {
+TEST(fft_Test, DFT_IDFT_real) {
 	const double cTolerance = 1e-10;
 	{
 		std::vector<std::complex<double>> orig_values{1,4,3,2};
-		std::vector<std::complex<double>> freq_vals = dft(orig_values);
+		std::vector<std::complex<double>> freq_vals = DFT(orig_values);
 		ASSERT_EQ(freq_vals.size(), 4);
 		EXPECT_NEAR(freq_vals[0].real(), 10, cTolerance);
 		EXPECT_NEAR(freq_vals[0].imag(), 0, cTolerance);
@@ -21,7 +21,7 @@ TEST(fft_Test, dft_idft_real) {
 		EXPECT_NEAR(freq_vals[3].real(), -2, cTolerance);
 		EXPECT_NEAR(freq_vals[3].imag(),  2, cTolerance);
 
-		std::vector<std::complex<double>> restored_values = idft(freq_vals);
+		std::vector<std::complex<double>> restored_values = IDFT(freq_vals);
 		ASSERT_EQ(restored_values.size(), 4);
 
 		EXPECT_NEAR(restored_values[0].real(), 1, cTolerance);
@@ -38,11 +38,11 @@ TEST(fft_Test, dft_idft_real) {
 	}
 }
 
-TEST(fft_Test, dft_idft_complex) {
+TEST(fft_Test, DFT_IDFT_complex) {
 	const double cTolerance = 1e-10;
 	{
 		std::vector<std::complex<double>> orig_values{{1,-1},{4,4},{-3,3},{-2,-2}};
-		std::vector<std::complex<double>> freq_vals = dft(orig_values);
+		std::vector<std::complex<double>> freq_vals = DFT(orig_values);
 		ASSERT_EQ(freq_vals.size(), 4);
 		EXPECT_NEAR(freq_vals[0].real(), 0, cTolerance);
 		EXPECT_NEAR(freq_vals[0].imag(), 4, cTolerance);
@@ -56,7 +56,7 @@ TEST(fft_Test, dft_idft_complex) {
 		EXPECT_NEAR(freq_vals[3].real(), -2, cTolerance);
 		EXPECT_NEAR(freq_vals[3].imag(),  2, cTolerance);
 
-		std::vector<std::complex<double>> restored_values = idft(freq_vals);
+		std::vector<std::complex<double>> restored_values = IDFT(freq_vals);
 		ASSERT_EQ(restored_values.size(), 4);
 
 		EXPECT_NEAR(restored_values[0].real(), 1, cTolerance);
@@ -116,3 +116,37 @@ TEST(fft_Test, ZeroPad_crash) {
 		}, "");
 	}
 }
+
+
+TEST(fft_Test, FFT_IFFT_empty) {
+	{
+		std::vector<std::complex<double>> x;
+		auto X = FFT(x);
+		EXPECT_EQ(X.size(), 0);
+	}
+
+	{
+		std::vector<std::complex<double>> X;
+		auto x = IFFT(X);
+		EXPECT_EQ(x.size(), 0);
+	}
+}
+
+TEST(fft_Test, FFT_IFFT_single) {
+	{
+		std::vector<std::complex<double>> x{{1,2}};
+		auto X = FFT(x);
+		ASSERT_EQ(X.size(), 1);
+		EXPECT_EQ(X[0].real(), 1.0);
+		EXPECT_EQ(X[0].imag(), 2.0);
+	}
+
+	{
+		std::vector<std::complex<double>> X{{3,4}};
+		auto x = IFFT(X);
+		ASSERT_EQ(x.size(), 1);
+		EXPECT_EQ(x[0].real(), 3.0);
+		EXPECT_EQ(x[0].imag(), 4.0);
+	}
+}
+

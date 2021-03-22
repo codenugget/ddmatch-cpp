@@ -11,7 +11,7 @@
 #define M_PI 3.1415926535897932384
 #endif
 
-inline std::vector<std::complex<double>> dft(const std::vector<std::complex<double>>& x) {
+inline std::vector<std::complex<double>> DFT(const std::vector<std::complex<double>>& x) {
 	int N = static_cast<int>(x.size());
 	TGrid<std::complex<double>> grid(N,N,{0.0,0.0});
 	for(int r = 0; r < N; ++r) {
@@ -30,7 +30,7 @@ inline std::vector<std::complex<double>> dft(const std::vector<std::complex<doub
 }
 
 
-inline std::vector<std::complex<double>> idft(const std::vector<std::complex<double>>& x) {
+inline std::vector<std::complex<double>> IDFT(const std::vector<std::complex<double>>& x) {
 	int N = static_cast<int>(x.size());
 	TGrid<std::complex<double>> grid(N,N,{0.0,0.0});
 	for(int r = 0; r < N; ++r) {
@@ -60,7 +60,7 @@ inline std::vector<std::complex<double>> ZeroPad(const std::vector<std::complex<
 // Algorithm S5: Runs in O(n log n) time. NOTE: only works when length(x) is a power of two
 inline std::vector<std::complex<double>> FFT(const std::vector<std::complex<double>>& x) {
 	int n = static_cast<int>(x.size());
-	if (n == 1)
+	if (n <= 1)
 		return x;
 	int nodd = n / 2 + ((n&1) ? 1 : 0);
 	std::vector<std::complex<double>> xe, xo;
@@ -89,7 +89,7 @@ inline std::vector<std::complex<double>> FFT(const std::vector<std::complex<doub
 // Algorithm S6: Runs in O(n log n) time.
 inline std::vector<std::complex<double>> IFFT(const std::vector<std::complex<double>>& y) {
 	int n = static_cast<int>(y.size());
-	if (n == 1)
+	if (n <= 1)
 		return y;
 	int nodd = n / 2 + ((n&1) ? 1 : 0);
 	std::vector<std::complex<double>> ye, yo;

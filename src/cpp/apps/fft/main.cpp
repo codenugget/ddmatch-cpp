@@ -5,18 +5,19 @@
 
 int main(int argc, char** argv)
 {
-  std::vector<std::complex<double>> orig{{1,-1},{4,4},{-3,3},{-2,-2}};
+  std::vector<std::complex<double>> orig{{1,-1},{1,4}};
+  //std::vector<std::complex<double>> orig{{1,-1},{4,4},{-3,3},{-2,-2}};
   //std::vector<std::complex<double>> orig{{1,0},{4,0},{3,0},{2,0}};
   std::cout << "orig: ";
   for(auto e : orig)
     std::cout << e << ", ";
 
   std::cout << "\n\ndft: ";
-  auto r1 = dft(orig);
+  auto r1 = DFT(orig);
   for(auto e : r1)
     std::cout << e << ", ";
   std::cout << "\nidft: ";
-  auto inv1 = idft(r1);
+  auto inv1 = IDFT(r1);
   for(auto e : inv1)
     std::cout << e << ", ";
 

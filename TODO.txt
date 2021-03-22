@@ -1,22 +1,14 @@
 High:
-[ ] Add test cases for CZT/ICZT
-[ ] Add test cases for dft/idft, fft/ifft
-[ ] Add test cases for ZeroPad
-[ ] Add test cases for CirculantMultiply
-[ ] Add test cases for SkewCirculantMultiply
-[ ] Add test cases for ToeplitzMultiplyE
-[ ] Add test cases for ToeplitzMultiplyP
+[ ] Need to think over more of what I want to test here
+  [ ] Add test cases for FFT/IFFT
+  [ ] Add test cases for CZT/ICZT
+  [ ] Add test cases for DFT/IDFT
 [ ] Add test cases for TCube
 [ ] Add more test cases to make sure code conversion works as expected
 [ ] Pythons modulo differs from c++, need to do: ((x % n) + n) % n to make them the work same
     Maybe just add n if result is negative for performance reasons?
 [ ] Make it possible to run the simplest example
 [ ] Generalize to arbitrary width / height
-[x] chirp-z
-  [x] Evaluate W^(k^2/2), W^(-k^2/2) and A^(-k)
-[x] Seems ICZT contains errors
-[x] Add properly implemented FFT / iFFT
-[x] Fix DFT / iDFT
 [x] Add test cases for core lib
 [x] Add gtest to failing function(s)
 [x] Add gtest to the project structure
@@ -24,6 +16,20 @@ High:
 [x] Replace usage of dImage with TGrid<double> in DiffeoFunctionMatching
 [x] Replace usage of dImage with TGrid<double> in Diffeo_functions
 [x] Fix so it's possible to use const operator[] in TGrid TCube etc
+[x] Fix DFT / iDFT
+[x] Add properly implemented FFT / iFFT
+[x] Seems ICZT contains errors
+[x] chirp-z
+  [x] Evaluate W^(k^2/2), W^(-k^2/2) and A^(-k)
+[x] Add test cases for ZeroPad
+
+Medium:
+[ ] These are semi-public functions, the most important ones are FFT/IFFT, CZT/ICZT, DFT/IDFT
+[ ] Add test cases for CirculantMultiply
+[ ] Add test cases for SkewCirculantMultiply
+[ ] Add test cases for ToeplitzMultiplyE
+[ ] Add test cases for ToeplitzMultiplyP
+
 
 Notes (low):
 [ ] cleanup stage (mostly I've bloated the ImageLib with unused functions)
