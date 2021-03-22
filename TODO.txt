@@ -1,10 +1,4 @@
 High:
-[ ] Need to think over more of what I want to test here
-  [ ] Add test cases for FFT/IFFT
-  [ ] Add test cases for CZT/ICZT
-  [ ] Add test cases for DFT/IDFT
-[ ] Add test cases for TCube
-[ ] Add more test cases to make sure code conversion works as expected
 [ ] Pythons modulo differs from c++, need to do: ((x % n) + n) % n to make them the work same
     Maybe just add n if result is negative for performance reasons?
 [ ] Make it possible to run the simplest example
@@ -23,13 +17,18 @@ High:
   [x] Evaluate W^(k^2/2), W^(-k^2/2) and A^(-k)
 [x] Add test cases for ZeroPad
 
-Medium:
+Unit testing:
+[ ] Add more test cases to make sure code conversion works as expected
+[ ] Add test cases for TCube
+[ ] Need to think over more of what I want to test here
+  [ ] Add test cases for FFT/IFFT
+  [ ] Add test cases for CZT/ICZT
+  [ ] Add test cases for DFT/IDFT
 [ ] These are semi-public functions, the most important ones are FFT/IFFT, CZT/ICZT, DFT/IDFT
-[ ] Add test cases for CirculantMultiply
-[ ] Add test cases for SkewCirculantMultiply
-[ ] Add test cases for ToeplitzMultiplyE
-[ ] Add test cases for ToeplitzMultiplyP
-
+  [ ] Add test cases for CirculantMultiply
+  [ ] Add test cases for SkewCirculantMultiply
+  [ ] Add test cases for ToeplitzMultiplyE
+  [ ] Add test cases for ToeplitzMultiplyP
 
 Notes (low):
 [ ] cleanup stage (mostly I've bloated the ImageLib with unused functions)
