@@ -1,3 +1,4 @@
+#include <cmath>
 #include "Diffeo_functions.h"
 
 // returns v0_idx, v1_idx, frac_dv
