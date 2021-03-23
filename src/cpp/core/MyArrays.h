@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <complex>
 #include <vector>
 
 template<typename T>
@@ -101,7 +102,7 @@ public:
   }
   TGrid(const TGrid& other) : m_rows(other.m_rows), m_cols(other.m_cols), m_array(other.m_array) {
   }
-  TGrid(TGrid&& other) : m_rows(other.m_rows), m_cols(other.m_cols), m_array(std::move(other.m_array)) {
+  TGrid(TGrid&& other) noexcept : m_rows(other.m_rows), m_cols(other.m_cols), m_array(std::move(other.m_array)) {
   }
 
   TGrid& operator = (const TGrid& other) {
@@ -111,7 +112,7 @@ public:
     return *this;
   }
 
-  TGrid& operator = (TGrid<T>&& other) {
+  TGrid& operator = (TGrid<T>&& other) noexcept {
     m_rows = other.m_rows;
     m_cols = other.m_cols;
     m_array = std::move(other.m_array);
@@ -132,7 +133,8 @@ public:
   int size() const { return rows() * cols(); }
   int size_bytes() const { return size() * sizeof(T); }
 
-  bool is_same_shape(const TGrid<T>& other) const {
+  template<typename T2>
+  bool is_same_shape(const TGrid<T2>& other) const {
     return rows() == other.rows() and cols() == other.cols();
   }
 
@@ -205,14 +207,20 @@ private:
 };
 
 typedef TVecRef<double> dVecRef;
+typedef TVecRef<std::complex<double>> cdVecRef;
 typedef TVecRef<float> fVecRef;
+typedef TVecRef<std::complex<float>> cfVecRef;
 typedef TVecRef<int> iVecRef;
 
+typedef TGridRef<std::complex<double>> cdGridRef;
 typedef TGridRef<double> dGridRef;
+typedef TGridRef<std::complex<float>> cfGridRef;
 typedef TGridRef<float> fGridRef;
 typedef TGridRef<int> iGridRef;
 
+typedef TGrid<std::complex<double>> cdGrid;
 typedef TGrid<double> dGrid;
+typedef TGrid<std::complex<float>> cfGrid;
 typedef TGrid<float> fGrid;
 typedef TGrid<int> iGrid;
 
@@ -384,3 +392,33 @@ TGrid<T> operator*(const T scale, const TGrid<T> &a) {
   return ret;
 }
 
+inline cdGrid mul(const cdGrid& a, const dGrid& b) {
+  assert(a.is_same_shape(b));
+  cdGrid ret = a;
+  int n = ret.size();
+  std::complex<double>* dst = ret.data();
+  const double* src = b.data();
+  for (int i = 0; i < n; ++i)
+    dst[i] *= src[i];
+  return ret;
+}
+
+inline dGrid real(const cdGrid& g) {
+  dGrid ret(g.rows(), g.cols(), 0.0);
+  int n = g.size();
+  const std::complex<double>* src = g.data();
+  double* dst = ret.data();
+  for (int i = 0; i < n; ++i)
+    dst[i] = src[i].real();
+  return ret;
+}
+
+inline dGrid imag(const cdGrid& g) {
+  dGrid ret(g.rows(), g.cols(), 0.0);
+  int n = g.size();
+  const std::complex<double>* src = g.data();
+  double* dst = ret.data();
+  for (int i = 0; i < n; ++i)
+    dst[i] = src[i].imag();
+  return ret;
+}

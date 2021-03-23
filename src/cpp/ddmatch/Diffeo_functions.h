@@ -34,7 +34,3 @@ bool jacobian_2d_forward(const dGrid& xphi, const dGrid& yphi, dGrid& jac);
 std::tuple<int, int, double> periodic_1d(const double v, const int s);
 // returns v0_idx, v1_idx, v0_shift, v1_shift, frac_dv
 std::tuple<int, int, double, double, double> periodic_1d_shift(const double v, const int s);
-
-// NOTE: boundary_conditions1(-2.16e-16, 64) will return invalid numbers... add to gtest
-// returns (i0,i1, i0shift, i1shift, fraction)
-//std::tuple<int, int, double, double, double> boundary_conditions1(const double value, const int sz);
