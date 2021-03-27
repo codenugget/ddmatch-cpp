@@ -198,6 +198,7 @@ void DiffeoFunctionMatching::setup() {
   m_xddx   = zeros_like(I1);
 
   // self.G = np.zeros_like(np.array([self.g,self.g]))
+  m_G.clear();
   m_G.resize(2);
   m_G[0].resize(2);
   m_G[1].resize(2);
