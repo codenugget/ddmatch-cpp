@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <tuple>
 #include <vector>
 
 #include "core/MyArrays.h"
@@ -29,5 +30,7 @@ bool divergence_2d(const dGrid&  vx, const dGrid& vy, dGrid& divv);
 
 bool jacobian_2d_forward(const dGrid& xphi, const dGrid& yphi, dGrid& jac);
 
-// returns (i0,i1, i0shift, i1shift, fraction)
-std::tuple<int, int, double, double, double> boundary_conditions1(const double value, const int sz);
+// returns v0_idx, v1_idx, frac_dv
+std::tuple<int, int, double> periodic_1d(const double v, const int s);
+// returns v0_idx, v1_idx, v0_shift, v1_shift, frac_dv
+std::tuple<int, int, double, double, double> periodic_1d_shift(const double v, const int s);

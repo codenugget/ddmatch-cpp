@@ -1,4 +1,84 @@
+#include <cmath>
 #include "Diffeo_functions.h"
+
+// returns v0_idx, v1_idx, frac_dv
+std::tuple<int, int, double> periodic_1d(const double v, const int s) {
+  // NOTE: what should we do when v is much larger than int allows?
+  assert(v <= std::numeric_limits<int>::max());
+  assert(v >= std::numeric_limits<int>::lowest());
+  int v0 = int(floor(v)); // floor(-2.1) = -3, floor(3.9) = 3
+  int v1 = v0 + 1;
+  double dv = v - double(v0);
+
+  // If dv is negative it means that v is negative, so v0
+  // is larger than v. We then reduce v0 and v1 by 1 and
+  // after that impose the periodic boundary conditions.
+  //if (dv < 0 or v0 < 0) // dv > 0
+  if (v0 < 0)
+  {
+    //dv += 1; // dv > 0
+    //v0 -= 1;
+    v0 %= s;
+    if (v0 < 0)
+      v0 += s; // modulo works differently in c++ vs python for negative numbers
+    //v1 -= 1;
+    if (v1 < 0) {
+      v1 %= s;
+      if (v1 < 0)
+        v1 += s; // modulo works differently in c++ vs python for negative numbers
+    }
+  }
+  else if (v0 >= s) {
+    v0 %= s;
+    v1 %= s;
+  }
+  else if (v1 >= s) {
+    v1 %= s;
+  }
+  return std::make_tuple(v0, v1, dv);
+}
+
+// returns v0_idx, v1_idx, v0_shift, v1_shift, frac_dv
+std::tuple<int, int, double, double, double> periodic_1d_shift(const double v, const int s) {
+  // NOTE: what should we do when v is much larger than int allows?
+  assert(v <= std::numeric_limits<int>::max());
+  assert(v >= std::numeric_limits<int>::lowest());
+  int v0 = int(floor(v)); // floor(2.1) = -3, floor(3.9) = 3
+  int v1 = v0 + 1;
+  double dv = v - double(v0); // dv is always >= 0
+
+  double v0_shift = 0.0;
+  double v1_shift = 0.0;
+
+  // If dv is negative it means that v is negative, so v0
+  // is larger than v. We then reduce v0 and v1 by 1 and
+  // after that impose the periodic boundary conditions.
+  if (v0 < 0) {
+    v0 %= s;
+    if (v0 < 0)
+      v0 += s; // modulo differs between c++ and python
+    v0_shift = -double(s);
+
+    if (v1 < 0) {
+      v1 %= s;
+      if (v1 < 0)
+        v1 += s;
+      v1_shift = -double(s);
+    }
+  }
+  else if (v0 >= s) {
+    v0 %= s;
+    v1 %= s;
+    v0_shift = double(s);
+    v1_shift = double(s);
+  }
+  else if (v1 >= s) {
+    v1 %= s;
+    v1_shift = double(s);
+  }
+
+  return std::make_tuple(v0, v1, v0_shift, v1_shift, dv);
+}
 
 bool image_compose_2d(const dGrid& I, const dGrid& xphi, const dGrid& yphi, dGrid& Iout) {
   if (!I.is_same_shape(xphi) or !I.is_same_shape(yphi) or !I.is_same_shape(Iout))
@@ -10,6 +90,17 @@ bool image_compose_2d(const dGrid& I, const dGrid& xphi, const dGrid& yphi, dGri
   int s = w;
   for(int py = 0; py < h; ++py) {
     for(int px = 0; px < w; ++px) {
+      const auto [x0, x1, dx] = periodic_1d(xphi[py][px], w);
+      const auto [y0, y1, dy] = periodic_1d(yphi[py][px], h);
+
+      double val = 0;
+      val += I[y0][x0] * (1-dx) * (1-dy);
+      val += I[y0][x1] * dx     * (1-dy);
+      val += I[y1][x0] * (1-dx) * dy;
+      val += I[y1][x1] * dx     * dy;
+      Iout[py][px] = val;
+
+      /*
       int x0_idx = int(xphi[py][px]);
       int y0_idx = int(yphi[py][px]);
       // QUESTION: why add to index here and not int x1_idx = int(xphi->get(px+1, py  , 0))?
@@ -55,6 +146,7 @@ bool image_compose_2d(const dGrid& I, const dGrid& xphi, const dGrid& yphi, dGri
       val += I[y1_idx][x0_idx] * (1.-frac_dx) * frac_dy;
       val += I[y1_idx][x1_idx] * frac_dx      * frac_dy;
       Iout[py][px] = val;
+      */
     }
   }
   return true;
@@ -120,6 +212,23 @@ bool eval_diffeo_2d(
   // d = xvect.shape[0]
   int n = (int) xvect.size();
   for(int i = 0; i < n; ++i) {
+    const auto [x0_idx, x1_idx, x0_shift, x1_shift, frac_dx] = periodic_1d_shift(xvect[i], w);
+    const auto [y0_idx, y1_idx, y0_shift, y1_shift, frac_dy] = periodic_1d_shift(yvect[i], h);
+    double val = 0;
+    val += (xpsi[y0_idx][x0_idx] + x0_shift) * (1.-frac_dx)* (1.-frac_dy);
+    val += (xpsi[y0_idx][x1_idx] + x1_shift) * frac_dx     * (1.-frac_dy);
+    val += (xpsi[y1_idx][x0_idx] + x0_shift) * (1.-frac_dx)* frac_dy;
+    val += (xpsi[y1_idx][x1_idx] + x1_shift) * frac_dx     * frac_dy;
+    xout[i] = val;
+
+    val = 0;
+    val += (ypsi[y0_idx][x0_idx] + y0_shift) * (1.-frac_dx)* (1.-frac_dy);
+    val += (ypsi[y0_idx][x1_idx] + y0_shift) * frac_dx     * (1.-frac_dy);
+    val += (ypsi[y1_idx][x0_idx] + y1_shift) * (1.-frac_dx)* frac_dy;
+    val += (ypsi[y1_idx][x1_idx] + y1_shift) * frac_dx     * frac_dy;
+    yout[i] = val;
+
+    /*
     int x0_idx = int(xvect[i]);
     int y0_idx = int(yvect[i]);
     int x1_idx = x0_idx + 1;
@@ -190,6 +299,7 @@ bool eval_diffeo_2d(
     val += (ypsi[y1_idx][x0_idx] + y1_shift)* (1.-frac_dx)* frac_dy;
     val += (ypsi[y1_idx][x1_idx] + y1_shift)* frac_dx     * frac_dy;
     yout[i] = val;
+    */
   }
   return true;
 /*
@@ -286,7 +396,7 @@ void dump_data(const dGrid& g, const char* filename) {
 
 // NOTE: boundary_conditions1(-2.16e-16, 64) will return invalid numbers... add to gtest
 // returns (i0,i1, i0shift, i1shift, fraction)
-std::tuple<int,int, double,double,double> boundary_conditions1(const double value, const int sz) {
+/*std::tuple<int,int, double,double,double> boundary_conditions1(const double value, const int sz) {
   int i0 = static_cast<int>(value);
   int i1 = i0 + 1;
   double i0_shift = 0.0;
@@ -318,7 +428,7 @@ std::tuple<int,int, double,double,double> boundary_conditions1(const double valu
     i1_shift = float(sz);
   }
   return { i0, i1, i0_shift, i1_shift, frac };
-}
+}*/
 
 bool diffeo_compose_2d(
   const dGrid& xpsi, const dGrid& ypsi,
@@ -349,9 +459,9 @@ bool diffeo_compose_2d(
       if (px == 21) {
         int dbg = 0;
       }
-      const auto [x0_idx, x1_idx, x0_shift, x1_shift, frac_dx] = boundary_conditions1(xphi[py][px], w);
-      const auto [y0_idx, y1_idx, y0_shift, y1_shift, frac_dy] = boundary_conditions1(yphi[py][px], h);
-      // NOTE: commented lines makes it crash (index out of bounds)
+      // NOTE: xphi seems to grow uncontrolled around edges (when writing xphi[0][62] is very large and causes an assertion failure, however neigboring values seems to be suspiciously large as well)
+      const auto [x0_idx, x1_idx, x0_shift, x1_shift, frac_dx] = periodic_1d_shift(xphi[py][px], w);
+      const auto [y0_idx, y1_idx, y0_shift, y1_shift, frac_dy] = periodic_1d_shift(yphi[py][px], h);
       double val = 0;
       val += (xpsi[y0_idx][x0_idx] + x0_shift) * (1.-frac_dx) * (1.-frac_dy);
       val += (xpsi[y0_idx][x1_idx] + x1_shift) * frac_dx      * (1.-frac_dy);

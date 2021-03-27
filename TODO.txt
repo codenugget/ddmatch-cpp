@@ -1,4 +1,7 @@
 High:
+[ ] Need to evaluate the proper fourier coefficients at fftn and ifftn
+    see: DiffeoFunctionMatching.cpp rows 437, 438, 446, 447
+    [ ] Investigate how the fourier coefficients are solved in np.fft.fftn abd np.fft.ifftn
 [ ] Pythons modulo differs from c++, need to do: ((x % n) + n) % n to make them the work same
     Maybe just add n if result is negative for performance reasons?
 [ ] Make it possible to run the simplest example

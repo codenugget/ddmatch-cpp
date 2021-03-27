@@ -274,19 +274,13 @@ void DiffeoFunctionMatching::setup() {
   }
 }
 
-dGrid fftn(const dGrid& g) {
-  return g;
+cdGrid fftn(const dGrid& g) {
+  cdGrid ret(g.rows(), g.cols(), std::complex<double>(0.0, 0.0));
+  return ret;
 }
 
-class CplxGrid {
-public:
-  dGrid real() const { return m_real; }
-  dGrid m_real;
-  dGrid m_complex;
-};
-
-CplxGrid ifftn(const dGrid& g) {
-  return CplxGrid{g, g};
+cdGrid ifftn(const cdGrid& g) {
+  return g;
 }
 
 
@@ -435,17 +429,17 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     //fftx *= self.Linv
     //ffty *= self.Linv
 
-    dGrid fftx = fftn(m_vx);
-    dGrid ffty = fftn(m_vy);
-    fftx = fftx * m_Linv;
-    ffty = ffty * m_Linv;
+    cdGrid fftx = fftn(m_vx);
+    cdGrid ffty = fftn(m_vy);
+    fftx = mul(fftx, m_Linv);
+    ffty = mul(ffty, m_Linv);
 
     //self.vx[:] = -np.fft.ifftn(fftx).real # vx[:]=smth will copy while vx=smth directs a pointer
     //self.vy[:] = -np.fft.ifftn(ffty).real
     //m_vx[:] = -ifftn(fftx).real(); // vx[:]=smth will copy while vx=smth directs a pointer
     //m_vy[:] = -ifftn(ffty).real();
-    m_vx = -(ifftn(fftx).real()); // vx[:]=smth will copy while vx=smth directs a pointer
-    m_vy = -(ifftn(ffty).real());
+    m_vx = -(real(ifftn(fftx))); // vx[:]=smth will copy while vx=smth directs a pointer
+    m_vy = -(real(ifftn(ffty)));
 
     // STEP 4 (v = -grad E, so to compute the inverse we solve \psiinv' = -epsilon*v o \psiinv)
     //np.copyto(self.tmpx, self.vx)
