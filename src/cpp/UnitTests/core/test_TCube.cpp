@@ -11,7 +11,9 @@ TEST(TCube_Test, DefaultConstructor) {
     EXPECT_EQ(def.size(), 0);
     EXPECT_EQ(def.size_bytes(), 0);
     EXPECT_EQ(def.data(), nullptr);
+#ifdef _DEBUG
     EXPECT_DEATH(def[0][0][0], "");
+#endif
   }
   {
     TCube<float> def;
@@ -21,7 +23,9 @@ TEST(TCube_Test, DefaultConstructor) {
     EXPECT_EQ(def.size(), 0);
     EXPECT_EQ(def.size_bytes(), 0);
     EXPECT_EQ(def.data(), nullptr);
+#ifdef _DEBUG
     EXPECT_DEATH(def[0][0][0], "");
+#endif
   }
   {
     TCube<double> def;
@@ -31,7 +35,9 @@ TEST(TCube_Test, DefaultConstructor) {
     EXPECT_EQ(def.size(), 0);
     EXPECT_EQ(def.size_bytes(), 0);
     EXPECT_EQ(def.data(), nullptr);
+#ifdef _DEBUG
     EXPECT_DEATH(def[0][0][0], "");
+#endif
   }
 }
 

@@ -33,6 +33,7 @@ TEST(periodic_1d_shift_Test, neg_test)
 
 TEST(periodic_1d_shift_Test, extreme_num)
 {
+#ifdef _DEBUG
   {
     double test_val = static_cast<double>(static_cast<int64_t>(std::numeric_limits<int>::max()) + 1);
     EXPECT_DEATH(periodic_1d_shift(test_val, 64), "");
@@ -41,6 +42,7 @@ TEST(periodic_1d_shift_Test, extreme_num)
     double test_val = static_cast<double>(static_cast<int64_t>(std::numeric_limits<int>::lowest()) - 1);
     EXPECT_DEATH(periodic_1d_shift(test_val, 64), "");
   }
+#endif
 }
 
 

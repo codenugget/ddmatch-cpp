@@ -76,12 +76,14 @@ TEST(TGrid_Test, Constructor) {
 
 TEST(TGrid_Test, OutOfBounds) {
   TGrid<int> grid(2,2, 0);
+#ifdef _DEBUG
   EXPECT_DEATH(grid[-1][0], "");
   EXPECT_DEATH(grid[0][-1], "");
   EXPECT_DEATH(grid[-1][-1], "");
   EXPECT_DEATH(grid[2][0], "");
   EXPECT_DEATH(grid[0][2], "");
   EXPECT_DEATH(grid[2][2], "");
+#endif
 }
 
 
@@ -211,6 +213,7 @@ TEST(TGrid_Test, operator_add) {
       EXPECT_NEAR(v[i], 3.0, cEpsilonAdd);
   }
 
+#ifdef _DEBUG
   {
     TGrid<double> a(3,3, 1.0);
     TGrid<double> b(4,3, 2.0);
@@ -254,6 +257,7 @@ TEST(TGrid_Test, operator_add) {
       TGrid<double> c = a + b;
     }, "");
   }
+#endif
 }
 
 TEST(TGrid_Test, operator_subtract) {
@@ -267,6 +271,7 @@ TEST(TGrid_Test, operator_subtract) {
       EXPECT_NEAR(v[i], -1.0, cEpsilonSub);
   }
 
+#ifdef _DEBUG
   {
     TGrid<double> a(3,3, 1.0);
     TGrid<double> b(4,3, 2.0);
@@ -310,6 +315,7 @@ TEST(TGrid_Test, operator_subtract) {
       TGrid<double> c = a - b;
     }, "");
   }
+#endif
 }
 
 
@@ -397,9 +403,11 @@ TEST(TGrid_Test, operator_multiply) {
   {
     TGrid<int> a(2,2, 1);
     TGrid<int> b(3,2, 1);
+#ifdef _DEBUG
     EXPECT_DEATH({
       TGrid<int> c = a * b;
     }, "");
+#endif
   }
   {
     TGrid<int> a(3,2, 3);

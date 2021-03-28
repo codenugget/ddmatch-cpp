@@ -109,12 +109,14 @@ TEST(fft_Test, ZeroPad) {
 }
 
 TEST(fft_Test, ZeroPad_crash) {
+#ifdef _DEBUG
 	{
 		std::vector<std::complex<double>> x {{1.0, 0.0}, {-1.0, 1.0}, {0.0, -1.0}};
 		EXPECT_DEATH({
 			auto y = ZeroPad(x, 2);
 		}, "");
 	}
+#endif
 }
 
 
