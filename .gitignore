@@ -1,6 +1,8 @@
 /build/
 /src/py/
 /stash/
+/runtime/Debug/
+/runtime/Release/
 /runtime/example
 /runtime/fft_test
 /runtime/overview.png

@@ -59,17 +59,17 @@ void ifreq(cdGrid& res) {
   std::complex<double> A = std::complex(1.0, 0.0);
 
   for(int y = 0; y < Mr; ++y) {
-    auto signal = get_row(y, res);
-    auto fft_sig = ICZT(signal, Mc, Wc, A);
+    auto fft_sig = get_row(y, res);
+    auto signal = ICZT(fft_sig, Mc, Wc, A);
     for(int i = 0; i < Mc; ++i)
-      res[y][i] = fft_sig[i];
+      res[y][i] = signal[i];
   }
 
   for(int x = 0; x < Mc; ++x) {
-    auto signal = get_col(x, res);
-    auto fft_sig = ICZT(signal, Mr, Wr, A);
+    auto fft_sig = get_col(x, res);
+    auto signal = ICZT(fft_sig, Mr, Wr, A);
     for(int i = 0; i < Mr; ++i)
-      res[i][x] = fft_sig[i];
+      res[i][x] = signal[i];
   }
 }
 

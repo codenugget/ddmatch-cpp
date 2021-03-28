@@ -4,6 +4,8 @@
 #include "DiffeoFunctionMatching.h"
 #include "Diffeo_functions.h"
 
+#include "core/MyFftSolver.h"
+
 template<typename T>
 std::vector<T> my_linspace(T start, T stop, int num, bool endpoint) {
   std::vector<T> ret(num, T(0));
@@ -429,8 +431,12 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     //fftx *= self.Linv
     //ffty *= self.Linv
 
-    cdGrid fftx = fftn(m_vx);
-    cdGrid ffty = fftn(m_vy);
+    cdGrid fftx = to_cdGrid(m_vx);
+    cdGrid ffty = to_cdGrid(m_vy);
+    calc_fft(fftx);
+    calc_fft(ffty);
+    //cdGrid fftx = fftn(m_vx);
+    //cdGrid ffty = fftn(m_vy);
     fftx = mul(fftx, m_Linv);
     ffty = mul(ffty, m_Linv);
 
@@ -438,8 +444,11 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     //self.vy[:] = -np.fft.ifftn(ffty).real
     //m_vx[:] = -ifftn(fftx).real(); // vx[:]=smth will copy while vx=smth directs a pointer
     //m_vy[:] = -ifftn(ffty).real();
-    m_vx = -(real(ifftn(fftx))); // vx[:]=smth will copy while vx=smth directs a pointer
-    m_vy = -(real(ifftn(ffty)));
+    calc_ifft(fftx);
+    calc_ifft(ffty);
+    // Q: Real part or amplitude?
+    m_vx = -(real(fftx)); // vx[:]=smth will copy while vx=smth directs a pointer
+    m_vy = -(real(ffty));
 
     // STEP 4 (v = -grad E, so to compute the inverse we solve \psiinv' = -epsilon*v o \psiinv)
     //np.copyto(self.tmpx, self.vx)
