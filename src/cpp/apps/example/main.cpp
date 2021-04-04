@@ -65,6 +65,7 @@ void run_and_save_example(const dGrid& I0, const dGrid& I1, const std::string& s
   }
 
   printf("%s Running\n", subpath.c_str());
+  //int num_iters = 1000;
   int num_iters = 1000;
   double epsilon = 0.1;
   dfm->run(num_iters, epsilon);
@@ -255,7 +256,7 @@ def run_and_save_example(I0, I1, subpath, description):
   print('Done at ' + time.asctime() + '\n')
 */
 
-void test1() {
+void low_density() {
   //std::random rnd;
   //std::mt19937_64 gen(rnd());
   std::mt19937_64 gen(1234);
@@ -284,9 +285,98 @@ void test1() {
   run_and_save_example(I0, I1, path, description);
 }
 
+void medium_density() {
+  //std::random rnd;
+  //std::mt19937_64 gen(rnd());
+  std::mt19937_64 gen(1234);
+  std::string description =
+    "Translations ought to be exactly achievable even with periodic\n"
+    "boundary conditions. This test verifies that presumption.\n\n"
+    "It seems that images that are non-smooth on the pixel level causes divergence.\n"
+    "Some binary \"smoothing\" method may be employed. Instead of single pixels,\n"
+    "small squares or circles could be used.";
+  int nPoints = 200;
+  int delta = 20;
+  dGrid I0(64, 64, 0.0);
+  dGrid I1(64, 64, 0.0);
+
+  std::uniform_int_distribution dis(5, 25);
+
+  for (int i = 0; i < nPoints; ++i)
+  {
+    int px = dis(gen);
+    int py = dis(gen);
+    I0[py][px] = 1.0;
+    I1[py + delta][px + delta] = 1.0;
+  }
+
+  std::string path = "translation/medium_density";
+  run_and_save_example(I0, I1, path, description);
+}
+
+
+void high_density() {
+  //std::random rnd;
+  //std::mt19937_64 gen(rnd());
+  std::mt19937_64 gen(1234);
+  std::string description =
+    "Translations ought to be exactly achievable even with periodic\n"
+    "boundary conditions. This test verifies that presumption.\n\n"
+    "It seems that images that are non-smooth on the pixel level causes divergence.\n"
+    "Some binary \"smoothing\" method may be employed. Instead of single pixels,\n"
+    "small squares or circles could be used.";
+  int nPoints = 400;
+  int delta = 20;
+  dGrid I0(64, 64, 0.0);
+  dGrid I1(64, 64, 0.0);
+
+  std::uniform_int_distribution dis(5, 25);
+
+  for (int i = 0; i < nPoints; ++i)
+  {
+    int px = dis(gen);
+    int py = dis(gen);
+    I0[py][px] = 1.0;
+    I1[py + delta][px + delta] = 1.0;
+  }
+
+  std::string path = "translation/high_density";
+  run_and_save_example(I0, I1, path, description);
+}
+
+void full_density() {
+  //std::random rnd;
+  //std::mt19937_64 gen(rnd());
+  std::mt19937_64 gen(1234);
+  std::string description =
+    "Translations ought to be exactly achievable even with periodic\n"
+    "boundary conditions. This test verifies that presumption.\n\n"
+    "It seems that images that are non-smooth on the pixel level causes divergence.\n"
+    "Some binary \"smoothing\" method may be employed. Instead of single pixels,\n"
+    "small squares or circles could be used.";
+  int nPoints = 400;
+  int delta = 20;
+  dGrid I0(64, 64, 0.0);
+  dGrid I1(64, 64, 0.0);
+
+  std::uniform_int_distribution dis(5, 25);
+
+  for (int py = 5; py < 25; ++py) {
+    for (int px = 5; px < 25; ++px) {
+      I0[py][px] = 1.0;
+      I1[py + delta][px + delta] = 1.0;
+    }
+  }
+  std::string path = "translation/full_density";
+  run_and_save_example(I0, I1, path, description);
+}
+
 int main(int argc, char** argv)
 {
-  test1();
+  low_density();
+  medium_density();
+  high_density();
+  full_density();
   exit(0);
 }
 

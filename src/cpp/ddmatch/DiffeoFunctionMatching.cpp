@@ -296,6 +296,7 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
   int kE = (int) m_E.size();
   m_E.resize(kE+niter, 0);
   for(int k = 0; k < niter; ++k) {
+    printf("k=%d/%d\n", k+1, niter);
     // OUTPUT
     //np.copyto(self.tmpx, self.I)
     //np.copyto(self.tmpy, self.I0)
