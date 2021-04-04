@@ -8,25 +8,14 @@ std::tuple<int, int, double> periodic_1d(const double v, const int s) {
   assert(v >= std::numeric_limits<int>::lowest());
   int v0 = int(floor(v)); // floor(-2.1) = -3, floor(3.9) = 3
   int v1 = v0 + 1;
-  double dv = v - double(v0);
+  double dv = v - double(v0); // in c++ dv is strictly >= 0
 
-  // If dv is negative it means that v is negative, so v0
-  // is larger than v. We then reduce v0 and v1 by 1 and
-  // after that impose the periodic boundary conditions.
-  //if (dv < 0 or v0 < 0) // dv > 0
+  // Impose the periodic boundary conditions.
   if (v0 < 0)
   {
-    //dv += 1; // dv > 0
-    //v0 -= 1;
-    v0 %= s;
-    if (v0 < 0)
-      v0 += s; // modulo works differently in c++ vs python for negative numbers
-    //v1 -= 1;
-    if (v1 < 0) {
-      v1 %= s;
-      if (v1 < 0)
-        v1 += s; // modulo works differently in c++ vs python for negative numbers
-    }
+    v0 = (v0 % s) + s;    // modulo works differently in c++ vs python for negative numbers
+    if (v1 < 0)
+      v1 = (v1 % s) + s;  // modulo works differently in c++ vs python for negative numbers
   }
   else if (v0 >= s) {
     v0 %= s;
@@ -43,26 +32,19 @@ std::tuple<int, int, double, double, double> periodic_1d_shift(const double v, c
   // NOTE: what should we do when v is much larger than int allows?
   assert(v <= std::numeric_limits<int>::max());
   assert(v >= std::numeric_limits<int>::lowest());
-  int v0 = int(floor(v)); // floor(2.1) = -3, floor(3.9) = 3
+  int v0 = int(floor(v)); // floor(-2.1) = -3, floor(3.9) = 3
   int v1 = v0 + 1;
-  double dv = v - double(v0); // dv is always >= 0
+  double dv = v - double(v0); // c++: dv is always >= 0
 
   double v0_shift = 0.0;
   double v1_shift = 0.0;
 
-  // If dv is negative it means that v is negative, so v0
-  // is larger than v. We then reduce v0 and v1 by 1 and
-  // after that impose the periodic boundary conditions.
+  // Impose the periodic boundary conditions.
   if (v0 < 0) {
-    v0 %= s;
-    if (v0 < 0)
-      v0 += s; // modulo differs between c++ and python
     v0_shift = -double(s);
-
+    v0 = (v0 % s) + s;    // modulo differs between c++ and python
     if (v1 < 0) {
-      v1 %= s;
-      if (v1 < 0)
-        v1 += s;
+      v1 = (v1 % s) + s;  // modulo differs between c++ and python
       v1_shift = -double(s);
     }
   }
@@ -208,8 +190,8 @@ bool eval_diffeo_2d(
   int h = xpsi.rows();
   if (w != h) // for now assume width == height
     return false;
-  int s = w;
   // d = xvect.shape[0]
+  // TODO: investigate if we need to implement differently when w != h
   int n = (int) xvect.size();
   for(int i = 0; i < n; ++i) {
     const auto [x0_idx, x1_idx, x0_shift, x1_shift, frac_dx] = periodic_1d_shift(xvect[i], w);
@@ -373,63 +355,6 @@ bool eval_diffeo_2d(
 */
 }
 
-//#define FIND_BUG
-#ifdef FIND_BUG
-#include <cstring>
-#include <fstream>
-void dump_data(const dGrid& g, const char* filename) {
-  std::ofstream fp(filename, std::ios::binary);
-
-  int w = g.cols();
-  int h = g.rows();
-  for(int y = 0; y < h; ++y) {
-    for(int x = 0; x < w; ++x) {
-      char buf[128];
-      sprintf(buf, "%.4f, ", g[y][x]);
-      auto l = strlen(buf);
-      fp.write(buf, l);
-    }
-    fp.write("\n", 1);
-  }
-}
-#endif
-
-// NOTE: boundary_conditions1(-2.16e-16, 64) will return invalid numbers... add to gtest
-// returns (i0,i1, i0shift, i1shift, fraction)
-/*std::tuple<int,int, double,double,double> boundary_conditions1(const double value, const int sz) {
-  int i0 = static_cast<int>(value);
-  int i1 = i0 + 1;
-  double i0_shift = 0.0;
-  double i1_shift = 0.0;
-  double frac = value - static_cast<double>(i0);
-  // TODO: check that this holds for c++!
-  // If frac_dx is negative it means that xphi is negative, so x0_idx
-  // is larger than xphi. We then reduce x0_idx and x1_idx by 1 and
-  // after that impose the periodic boundary conditions.
-  if (frac < 0 or i0 < 0) {
-    frac += 1.0;
-    i0 -= 1;
-    i1 -= 1;
-    i0 = ((i0 % sz) + sz) % sz;
-    i0_shift = -float(sz); // # Should use floor_divide here instead.
-    if (i1 < 0) {
-      i1 %= sz;
-      i1_shift = -float(sz);
-    }
-  }
-  else if (i0 >= sz) {
-    i0 %= sz;
-    i1 %= sz;
-    i0_shift = float(sz);
-    i1_shift = float(sz);
-  }
-  else if (i1 >= sz) {
-    i1 %= sz;
-    i1_shift = float(sz);
-  }
-  return { i0, i1, i0_shift, i1_shift, frac };
-}*/
-
 bool diffeo_compose_2d(
   const dGrid& xpsi, const dGrid& ypsi,
   const dGrid& xphi, const dGrid& yphi,
@@ -444,37 +369,24 @@ bool diffeo_compose_2d(
   if (w != h) // only allow square sizes now
     return false;
 
-#ifdef FIND_BUG
-  dump_data(xpsi, "xpsi.dat");
-  dump_data(ypsi, "ypsi.dat");
-  dump_data(xphi, "xphi.dat");
-  dump_data(yphi, "yphi.dat");
-  dump_data(xout, "xout.dat");
-  dump_data(yout, "yout.dat");
-#endif
-
 #if 1
-  for(int py = 0; py < h; ++py) {
-    for(int px = 0; px < w; ++px) {
-      if (px == 21) {
-        int dbg = 0;
-      }
-      // NOTE: xphi seems to grow uncontrolled around edges (when writing xphi[0][62] is very large and causes an assertion failure, however neigboring values seems to be suspiciously large as well)
-      const auto [x0_idx, x1_idx, x0_shift, x1_shift, frac_dx] = periodic_1d_shift(xphi[py][px], w);
-      const auto [y0_idx, y1_idx, y0_shift, y1_shift, frac_dy] = periodic_1d_shift(yphi[py][px], h);
+  for(int i = 0; i < h; ++i) {
+    for(int j = 0; j < w; ++j) {
+      const auto [x0_idx, x1_idx, x0_shift, x1_shift, frac_dx] = periodic_1d_shift(xphi[i][j], w);
+      const auto [y0_idx, y1_idx, y0_shift, y1_shift, frac_dy] = periodic_1d_shift(yphi[i][j], h);
       double val = 0;
       val += (xpsi[y0_idx][x0_idx] + x0_shift) * (1.-frac_dx) * (1.-frac_dy);
       val += (xpsi[y0_idx][x1_idx] + x1_shift) * frac_dx      * (1.-frac_dy);
       val += (xpsi[y1_idx][x0_idx] + x0_shift) * (1.-frac_dx) * frac_dy;
       val += (xpsi[y1_idx][x1_idx] + x1_shift) * frac_dx      * frac_dy;
-      xout[py][px] = val;
+      xout[i][j] = val;
 
       val = 0;
       val += (ypsi[y0_idx][x0_idx] + y0_shift) * (1.-frac_dx) * (1.-frac_dy);
       val += (ypsi[y0_idx][x1_idx] + y0_shift) * frac_dx      * (1.-frac_dy);
       val += (ypsi[y1_idx][x0_idx] + y1_shift) * (1.-frac_dx) * frac_dy;
       val += (ypsi[y1_idx][x1_idx] + y1_shift) * frac_dx      * frac_dy;
-      yout[py][px] = val;
+      yout[i][j] = val;
     }
   }
   return true;
@@ -630,40 +542,27 @@ bool diffeo_gradient_y_2d(const dGrid& I, dGrid& dIdx, dGrid& dIdy) {
   if (w != h)
     return false;
 
-  int s = w;
-
-  int i = 0;
-  int j = 0;
-  int ip1 = i+1;
-  int jp1 = j+1;
-  int im1 = s-1;
-  int jm1 = s-1;
-  int im2 = s-2;
-  int jm2 = s-2;
-  for (int j = 0; j < s; ++j) {
-    dIdy[  0][j] = (I[ip1][j] - I[im1][j] + s)/2.0;
-    dIdy[im1][j] = (I[  i][j] - I[im2][j] + s)/2.0;
+  for (int j = 0; j < w; ++j) {
+    dIdy[  0][j] = (I[1][j] - I[h-1][j] + h)/2.0; // TODO: verify h!
+    dIdy[h-1][j] = (I[0][j] - I[h-2][j] + h)/2.0; // TODO: verify h!
   }
-  for (int i = 0; i < s; ++i) {
-    dIdx[i][  0] = (I[i][jp1] - I[i][jm1])/2.0;
-    dIdx[i][jm1] = (I[i][  j] - I[i][jm2])/2.0;
-  }
-  im1 = 0;
-  jm1 = 0;
-  for(int i = 1; i < s-1; ++i) {
-    ip1 = i+1;
-    for(int j = 0; j < s; ++j) {
-      dIdy[i][j] = (I[ip1][j] - I[im1][j])/2.0;
+  for (int i = 1; i < h - 1; ++i) {
+    for (int j = 0; j < w; ++j) {
+      dIdy[i][j] = (I[i + 1][j] - I[i - 1][j]) / 2.0;
     }
-    im1 = i;
   }
 
-  for(int j = 1; j < s-1; ++j) {
-    jp1 = j+1;
-    for(int i = 0; i < s; ++i) {
-      dIdx[i][j] = (I[i][jp1] - I[i][jm1])/2.0;
+  // TODO: investigate if there is some boundary calculation missing for dIdx
+  //       i.e. where is dIdx[.][.] = (... + w)/2?
+  //       Maybe because we're evaluating the "gradient_*y*"?
+  for (int i = 0; i < h; ++i) {
+    dIdx[i][  0] = (I[i][1] - I[i][w-1])/2.0;
+    dIdx[i][w-1] = (I[i][0] - I[i][w-2])/2.0;
+  }
+  for(int j = 1; j < w-1; ++j) {
+    for(int i = 0; i < h; ++i) {
+      dIdx[i][j] = (I[i][j+1] - I[i][j-1])/2.0;
     }
-    jm1 = j;
   }
   return true;
   /*
@@ -709,41 +608,21 @@ bool diffeo_gradient_x_2d(const dGrid& I, dGrid& dIdx, dGrid& dIdy) {
   if (w != h)
     return false;
 
-  int s = w;
+  for (int j = 0; j < w; ++j) {
+    dIdy[  0][j] = (I[1][j] - I[h-1][j])/2.0;
+    dIdy[h-1][j] = (I[0][j] - I[h-1][j])/2.0;
+  }
+  for (int i = 1; i < h - 1; ++i)
+    for (int j = 0; j < w; ++j)
+      dIdy[i][j] = (I[i + 1][j] - I[i - 1][j]) / 2.0;
 
-  int i = 0;
-  int j = 0;
-  int ip1 = i+1;
-  int jp1 = j+1;
-  int im1 = s-1;
-  int jm1 = s-1;
-  int im2 = s-2;
-  int jm2 = s-2;
-  for (int j = 0; j < s; ++j) {
-    dIdy[  0][j] = (I[ip1][j] - I[im1][j])/2.0;
-    dIdy[im1][j] = (I[  i][j] - I[im2][j])/2.0;
+  for (int i = 0; i < h; ++i) {
+    dIdx[i][  0] = (I[i][1] - I[i][w-1] + w)/2.0; // TODO: verify w!
+    dIdx[i][w-1] = (I[i][0] - I[i][w-2] + w)/2.0; // TODO: verify w!
   }
-  j = 0;
-  for (int i = 0; i < s; ++i) {
-    dIdx[i][  0] = (I[i][jp1] - I[i][jm1] + s)/2.0;
-    dIdx[i][jm1] = (I[i][  j] - I[i][jm2] + s)/2.0;
-  }
-  im1 = 0;
-  jm1 = 0;
-  for(int i = 1; i < s-1; ++i) {
-    ip1 = i+1;
-    for(int j = 0; j < s; ++j) {
-      dIdy[i][j] = (I[jp1][j] - I[im1][j])/2.0;
-    }
-    im1 = i;
-  }
-  for(int j = 1; j < s-1; ++j) {
-    jp1 = j+1;
-    for(int i = 0; i < s; ++i) {
-      dIdx[i][j] = (I[i][jp1] - I[i][jm1])/2.0;
-    }
-    jm1 = j;
-  }
+  for(int j = 1; j < w-1; ++j)
+    for(int i = 0; i < h; ++i)
+      dIdx[i][j] = (I[i][j+1] - I[i][j-1])/2.0;
   return true;
   /*
     def diffeo_gradient_x_2d(I,dIdx,dIdy):
@@ -787,42 +666,34 @@ bool image_gradient_2d(const dGrid& I, dGrid& dIdx, dGrid& dIdy) {
   int h = I.rows();
   if (w != h)
     return false;
-  int s = w;
-
-  int im1 = s-1;
-  int jm1 = s-1;
-  int jp1;
-  for (int i = 0; i< s-1; ++i) {
-    int ip1 = i+1;
-    for (int j = 0; j < s-1; ++j) {
-      jp1 = j+1;
-      double val = (I[ip1][j] - I[im1][j])/2.0;
+  int im1 = h-1;
+  //int jp1;
+  for (int i = 0; i< h-1; im1 = i, ++i) {
+    int jm1 = w - 1;
+    for (int j = 0; j < w-1; ++j) {
+      double val = (I[i+1][j] - I[im1][j])/2.0;
       dIdy[i][j] = val;
-      val = (I[i][jp1] - I[jm1][i])/2.0;
+      val = (I[i][j+1] - I[i][jm1])/2.0;
       dIdx[i][j] = val;
       jm1 = j;
     }
-    double val = (I[ip1][s-1] - I[im1][s-1])/2.0;
-    dIdy[i][s-1] = val;
-    val = (I[i][0] - I[i][s-2])/2.0;
-    dIdx[i][s-1] = val;
-    jm1 = s-1;
-    im1 = i;
+    double val = (I[i+1][w-1] - I[im1][w-1])/2.0;
+    dIdy[i][w-1] = val;
+    val = (I[i][0] - I[i][w-2])/2.0;
+    dIdx[i][w-1] = val;
   }
-  for(int j = 0; j < s-1; ++j) {
-    jp1 = j+1;
-    double val = (I[0][j] - I[im1][j])/2.0;
-    dIdy[s-1][j] = val;
-    val = (I[s-1][jp1] - I[s-1][jm1])/2.0;
-    dIdx[s-1][j] = val;
+  int jm1 = w - 1;
+  for(int j = 0; j < w-1; ++j) {
+    double val = (I[0][j] - I[h-2][j])/2.0;
+    dIdy[h-1][j] = val;
+    val = (I[h-1][j+1] - I[h-1][jm1])/2.0;
+    dIdx[h-1][j] = val;
     jm1 = j;
   }
-  double val = (I[0][s-1] - I[s-2][s-1])/2.0;
-  dIdy[s-1][s-1] = val;
-  //dIdy[s-1,s-1] = (I[0,s-1]-I[s-2,s-1])/2.0
-  val = (I[s-1][0] - I[s-1][s-2])/2.0;
-  dIdx[s-1][s-1] = val;
-  //dIdx[s-1,s-1] = (I[s-1,0]-I[s-1,s-2])/2.0
+  double val = (I[0][w-1] - I[h-2][w-1])/2.0;
+  dIdy[h-1][w-1] = val;
+  val = (I[h-1][0] - I[h-1][w-2])/2.0;
+  dIdx[h-1][w-1] = val;
   return true;
 /*
   def image_gradient_2d(I,dIdx,dIdy):
@@ -857,41 +728,35 @@ bool image_gradient_2d_forward(const dGrid& I, dGrid& dIdx, dGrid& dIdy) {
   int h = I.rows();
   if (w != h)
     return false;
-  int s = w;
 
-  int im1 = s-1;
-  int jm1 = s-1;
-  int ip1;
-  int jp1;
-  for (int i = 0; i < s-1; ++i) {
-    ip1 = i+1;
-    for (int j = 0; j < s-1; ++j) {
-      jp1 = j+1;
-      double val = (I[ip1][j] - I[im1][j]) / 2.0;
+  int im1 = h-1;
+  for (int i = 0; i < h-1; ++i) {
+    int jm1 = w - 1;
+    for (int j = 0; j < w-1; ++j) {
+      double val = (I[i+1][j] - I[im1][j]) / 2.0;
       dIdy[i][j] = val;
-      val = (I[i][jp1] - I[i][jm1]) / 2.0;
+      val = (I[i][j+1] - I[i][jm1]) / 2.0;
       dIdx[i][j] = val;
       jm1 = j;
     }
-    double val = (I[ip1][s-1] - I[im1][s-1]) / 2.0;
-    dIdy[i][s-1] = val;
-    val = (I[i][0] - I[i][s-2]) / 2.0;
-    dIdx[i][s-1] = val;
-    jm1 = s-1;
+    double val = (I[i+1][w-1] - I[im1][w-1]) / 2.0;
+    dIdy[i][w-1] = val;
+    val = (I[i][0] - I[i][w-2]) / 2.0;
+    dIdx[i][w-1] = val;
     im1 = i;
   }
-  for(int j = 0; j < s-1; ++j) {
-    jp1 = j+1;
-    double val = (I[0][j] - I[im1][j])/2.0;
-    dIdy[s-1][j] = val;
-    val = (I[s-1][jp1] - I[s-1][jm1])/2.0;
-    dIdx[s-1][j] = val;
+  int jm1 = w - 1;
+  for(int j = 0; j < w-1; ++j) {
+    double val = (I[0][j] - I[h-2][j])/2.0;
+    dIdy[h-1][j] = val;
+    val = (I[h-1][j+1] - I[h-1][jm1])/2.0;
+    dIdx[h-1][j] = val;
     jm1 = j;
   }
-  double val = (I[0][s-1] - I[s-2][s-1])/2.0;
-  dIdy[s-1][s-1] = val;
-  val = (I[s-1][0] - I[s-1][s-2])/2.0;
-  dIdx[s-1][s-1] = val;
+  double val = (I[0][w-1] - I[h-2][w-1])/2.0;
+  dIdy[h-1][w-1] = val;
+  val = (I[h-1][0] - I[h-1][w-2])/2.0;
+  dIdx[h-1][w-1] = val;
   return true;
 /*
   def image_gradient_2d_forward(I,dIdx,dIdy):
@@ -929,41 +794,35 @@ bool divergence_2d(const dGrid& vx, const dGrid& vy, dGrid& divv) {
   int h = vx.rows();
   if (w != h)
     return false;
-  int s = w;
 
-  int im1 = s-1;
-  int jm1 = s-1;
-  int ip1;
-  int jp1;
-  for (int i = 0; i < s-1; ++i) {
-    ip1 = i+1;
-    for (int j = 0; i < s-1; ++j) {
-      jp1 = j+1;
-      double dy = vy[ip1][  j] - vy[im1][  j];
-      double dx = vx[  i][jp1] - vx[  i][jm1];
+  int im1 = h-1;
+  for (int i = 0; i < h-1; ++i) {
+    int jm1 = w - 1;
+    for (int j = 0; i < w-1; ++j) {
+      double dy = vy[i+1][  j] - vy[im1][  j];
+      double dx = vx[  i][j+1] - vx[  i][jm1];
       divv[i][j] = (dx + dy)/2.0;
       //divv[i,j] = (vy[ip1,j]-vy[im1,j] + vx[i,jp1]-vx[i,jm1])/2.0
       jm1 = j;
     }
-    double dy = vy[ip1][s-1] - vy[im1][s-1];
-    double dx = vx[  i][  0] - vx[  i][s-2];
-    divv[i][s-1] = (dx + dy)/2.0;
+    double dy = vy[i+1][w-1] - vy[im1][w-1];
+    double dx = vx[  i][  0] - vx[  i][w-2];
+    divv[i][w-1] = (dx + dy)/2.0;
     //divv[i,s-1] = (vy[ip1,s-1]-vy[im1,s-1] + vx[i,0]-vx[i,s-2])/2.0
-    jm1 = s-1;
     im1 = i;
   }
-  for(int j = 0; j < s-1; ++j) {
-    jp1 = j+1;
+  int jm1 = w - 1;
+  for(int j = 0; j < w-1; ++j) {
     //divv[s-1,j] = (vy[0,j]-vy[im1,j] + vx[s-1,jp1]-vx[s-1,jm1])/2.0
-    double dy = vy[  0][  j] - vy[im1][  j];
-    double dx = vx[s-1][jp1] - vx[s-1][jm1];
-    divv[s-1][j] = (dx + dy)/2.0;
+    double dy = vy[  0][  j] - vy[h-2][  j];
+    double dx = vx[h-1][j+1] - vx[h-1][jm1];
+    divv[h-1][j] = (dx + dy)/2.0;
     jm1 = j;
   }
   //divv[s-1,s-1] = (vy[0,s-1]-vy[s-2,s-1] + vx[s-1,0]-vx[s-1,s-2])/2.0
-  double dy = vy[s-1][  0] - vy[s-1][s-2];
-  double dx = vx[  0][s-1] - vx[s-2][s-1];
-  divv[s-1][s-1] = (dx + dy)/2.0;
+  double dy = vy[  0][w-1] - vy[h-2][w-1];
+  double dx = vx[h-1][  0] - vx[h-1][w-2];
+  divv[h-1][w-1] = (dx + dy)/2.0;
   return true;
 /*
   def divergence_2d(vx,vy,divv):
@@ -992,7 +851,6 @@ constexpr double det_2d(const double a11, const double a21, const double a12, co
     return a11*a22 - a12*a21;
 }
 
-
 bool jacobian_2d_forward(const dGrid& xphi, const dGrid& yphi, dGrid& jac) {
   if (!xphi.is_same_shape(yphi) or !xphi.is_same_shape(jac))
     return false;
@@ -1001,10 +859,9 @@ bool jacobian_2d_forward(const dGrid& xphi, const dGrid& yphi, dGrid& jac) {
   int h = xphi.rows();
   if (w != h)
     return false;
-  int s = w;
 
-  for (int i = 0; i < s-1; ++i) {
-    for (int j = 0; j < s-1; ++j) {
+  for (int i = 0; i < h-1; ++i) {
+    for (int j = 0; j < w-1; ++j) {
       double dxphi_dx = xphi[  i][j+1] - xphi[i][j];
       double dxphi_dy = xphi[i+1][  j] - xphi[i][j];
       double dyphi_dx = yphi[  i][j+1] - yphi[i][j];
@@ -1013,34 +870,35 @@ bool jacobian_2d_forward(const dGrid& xphi, const dGrid& yphi, dGrid& jac) {
                           dxphi_dy,dyphi_dy);
       jac[i][j] = det;
     }
-    // TODO: why +s here?
-    double dxphi_dx = xphi[  i][  0] + s - xphi[i][s-1];
-    double dxphi_dy = xphi[i+1][s-1]     - xphi[i][s-1];
-    double dyphi_dx = yphi[  i][  0]     - yphi[i][s-1];
-    double dyphi_dy = yphi[i+1][s-1]     - yphi[i][s-1];
+    // TODO: why +s here? (+w after refactoring)
+    // it also differs from +s below
+    double dxphi_dx = xphi[  i][  0] + w - xphi[i][w-1];
+    double dxphi_dy = xphi[i+1][w-1]     - xphi[i][w-1];
+    double dyphi_dx = yphi[  i][  0]     - yphi[i][w-1];
+    double dyphi_dy = yphi[i+1][w-1]     - yphi[i][w-1];
     double det = det_2d(dxphi_dx,dyphi_dx,
                         dxphi_dy,dyphi_dy);
-
-    jac[i][s-1] = det;
+    jac[i][w-1] = det;
   }
-  for (int j = 0; j < s-1; ++j) {
-    double dxphi_dx = xphi[s-1][j+1] - xphi[s-1][j];
-    double dxphi_dy = xphi[  0][  j] - xphi[s-1][j];
-    double dyphi_dx = yphi[s-1][j+1] - yphi[s-1][j];
-    double dyphi_dy = yphi[  0][  j] - yphi[s-1][j];
+  for (int j = 0; j < w-1; ++j) {
+    double dxphi_dx = xphi[h-1][j+1]     - xphi[h-1][j];
+    double dxphi_dy = xphi[  0][  j]     - xphi[h-1][j];
+    double dyphi_dx = yphi[h-1][j+1]     - yphi[h-1][j];
+    // TODO: why +s here? (+h after refactoring)
+    double dyphi_dy = yphi[  0][  j] + h - yphi[h-1][j];
     double det = det_2d(dxphi_dx,dyphi_dx,
                         dxphi_dy,dyphi_dy);
-    jac[s-1][j] = det;
+    jac[h-1][j] = det;
   }
 
-  // TODO: why +s here?
-  double dxphi_dx = xphi[s-1][  0] + s - xphi[s-1][s-1];
-  double dxphi_dy = xphi[  0][s-1]     - xphi[s-1][s-1];
-  double dyphi_dx = yphi[s-1][  0]     - yphi[s-1][s-1];
-  double dyphi_dy = yphi[  0][s-1] + s - yphi[s-1][s-1];
+  // TODO: why +s here? (+w,+h afer refactoring)
+  double dxphi_dx = xphi[h-1][  0] + w - xphi[h-1][w-1];
+  double dxphi_dy = xphi[  0][w-1]     - xphi[h-1][w-1];
+  double dyphi_dx = yphi[h-1][  0]     - yphi[h-1][w-1];
+  double dyphi_dy = yphi[  0][w-1] + h - yphi[h-1][w-1];
   double det = det_2d(dxphi_dx,dyphi_dx,
                       dxphi_dy,dyphi_dy);
-  jac[s-1][s-1] = det;
+  jac[h-1][w-1] = det;
   return true;
 }
 /*
