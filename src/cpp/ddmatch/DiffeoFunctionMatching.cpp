@@ -286,6 +286,8 @@ cdGrid ifftn(const cdGrid& g) {
 }
 
 
+// niter   : Number of iterations to take.
+// epsilon : The stepsize in the gradient descent method.
 void DiffeoFunctionMatching::run(int niter, double epsilon) {
   // Carry out the matching process.
   // Implements to algorithm in the paper by Modin and Karlsson
@@ -303,12 +305,17 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     //self.tmpx = self.tmpx-self.tmpy
     //self.tmpx **= 2
     //self.E[k+kE] = self.tmpx.sum()
-    m_tmpx = m_tmpx - m_tmpy;
-    m_tmpx = elem_func(m_tmpx, [](double v){ return v*v; });
+    m_tmpx -= m_tmpy;
+    elem_func_inplace(m_tmpx, [](double v){ return v*v; });
     m_E[k+kE] = sum(m_tmpx);
 
-    //np.copyto(self.tmpx, (self.h[0,0]-self.g[0,0])**2+(self.h[1,0]-self.g[1,0])**2+\
-    //  (self.h[0,1]-self.g[0,1])**2+(self.h[1,1]-self.g[1,1])**2)
+    //np.copyto(
+    // self.tmpx,
+    //  (self.h[0,0]-self.g[0,0])**2 +
+    //  (self.h[1,0]-self.g[1,0])**2 +
+    //  (self.h[0,1]-self.g[0,1])**2 +
+    //  (self.h[1,1]-self.g[1,1])**2
+    //)
     const auto diff_sq = [](const double v1, const double v2){
       double v = (v1-v2);
       return v*v;
@@ -329,22 +336,22 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     diffeo_gradient_y_2d(m_phiinvy, m_yddx, m_yddy);
     diffeo_gradient_x_2d(m_phiinvx, m_xddx, m_xddy);
 
-    const auto qq_sq = [](const double x, const double y){
+    const auto square_sum = [](const double x, const double y){
       double v = x*x + y*y;
       return v*v;
     };
     //np.copyto(self.h[0,0], self.yddy*self.yddy+self.xddy*self.xddy)
-    elem_set(m_h[0][0], m_yddy, m_xddy, qq_sq);
-    const auto qq_dot = [](const double x, const double y, const double z, const double w){
+    elem_set(m_h[0][0], m_yddy, m_xddy, square_sum);
+    const auto dot_sum = [](const double x, const double y, const double z, const double w){
       double v = x*y + z*w;
       return v*v;
     };
     //np.copyto(self.h[1,0], self.yddx*self.yddy+self.xddx*self.xddy)
-    elem_set(m_h[1][0], m_yddx, m_yddy, m_xddx, m_xddy, qq_dot);
+    elem_set(m_h[1][0], m_yddx, m_yddy, m_xddx, m_xddy, dot_sum);
     //np.copyto(self.h[0,1], self.yddy*self.yddx+self.xddy*self.xddx)
-    elem_set(m_h[0][1], m_yddy, m_yddx, m_xddy, m_xddx, qq_dot);
+    elem_set(m_h[0][1], m_yddy, m_yddx, m_xddy, m_xddx, dot_sum);
     //np.copyto(self.h[1,1], self.yddx*self.yddx+self.xddx*self.xddx)
-    elem_set(m_h[1][1], m_yddx, m_xddx, qq_sq);
+    elem_set(m_h[1][1], m_yddx, m_xddx, square_sum);
 
     //self.image_gradient(self.h[0,0], self.dhaadx, self.dhaady)
     //self.image_gradient(self.h[0,1], self.dhabdx, self.dhabdy)
@@ -369,7 +376,42 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     //   +2*(self.h[1,0]-self.g[1,0])*self.dhbady
     //   +2*(self.h[0,1]-self.g[0,1])*self.dhaadx
     //   +2*(self.h[1,1]-self.g[1,1])*self.dhbadx)
-    m_Jmap[0] = 
+    // TODO: this is very slow and needs to be rewritten
+#if 0
+    // expanding code for verficiation or simplification at a later stage
+    aa = m_h[0][0], AA = m_g[0][0]
+    ab = m_h[0][1], AB = m_g[0][1]
+    ba = m_h[1][0], BA = m_g[1][0]
+    bb = m_h[1][1], BB = m_g[1][1]
+
+    y11 = m_dhaady
+    y12 = m_dhabdy
+    y21 = m_dhbady
+    y22 = m_dhbbdy
+
+    x11 = m_dhaadx
+    x12 = m_dhabdx
+    x21 = m_dhbadx
+    x22 = m_dhbbdx
+
+    J[0] =-( (aa-AA)*y11 + (ab-AB)*y12 + (ba-BA)*y21 + (bb-BB)*y22 )
+      +2.0*( (aa)   *y11 + (aa)   *x12 + (ba)   *y21 + (ba)   *x22
+           +((aa-AA)*y11)+((ab-AB)*x11)+((ba-BA)*y21)+((bb-BB)*x21));
+
+    J[1] =-( (aa-AA)*x11 + (ab-AB)*x12 + (ba-BA)*x21 + (bb-BB)*x22 )
+      +2.0*( (ab)   *y11 + (ab)   *x12 + (bb)   *y21 + (bb)   *x22
+           +((aa-AA)*y12)+((ab-AB)*x12)+((ba-BA)*y22)+((bb-BB)*x22));
+
+    // alternatively hrc = m_h[r][c], grc = m_g[r][c]
+    J[0] =-( (h11-g11)*y11 + (h12-g12)*y12 + (h21-g21)*y21 + (h22-g22)*y22 )
+      +2.0*( (h11)    *y11 + (h11)    *x12 + (h21)    *y21 + (h21)    *x22
+           +((h11-g11)*y11)+((h12-g12)*x11)+((h21-g21)*y21)+((h22-g22)*x21));
+
+    J[1] =-( (h11-g11)*x11 + (h12-g12)*x12 + (h21-g21)*x21 + (h22-g22)*x22 )
+      +2.0*( (h12)    *y11 + (h12)    *x12 + (h22)    *y21 + (h22)    *x22
+          + ((h11-g11)*y12)+((h12-g12)*x12)+((h21-g21)*y22)+((h22-g22)*x22));
+#endif
+    m_Jmap[0] =
       -(
          (m_h[0][0]-m_g[0][0]) * m_dhaady
         +(m_h[0][1]-m_g[0][1]) * m_dhabdy
@@ -401,7 +443,8 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     //    +2*(self.h[1,0]-self.g[1,0])*self.dhbbdy
     //    +2*(self.h[0,1]-self.g[0,1])*self.dhabdx
     //    +2*(self.h[1,1]-self.g[1,1])*self.dhbbdx)
-    m_Jmap[1] = 
+    // TODO: this is very slow and needs to be rewritten
+    m_Jmap[1] =
       -(
          (m_h[0][0]-m_g[0][0]) * m_dhaadx
         +(m_h[0][1]-m_g[0][1]) * m_dhabdx
@@ -421,24 +464,35 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
 
     //self.image_gradient(self.I, self.dIdx, self.dIdy)
     image_gradient_2d(m_I, m_dIdx, m_dIdy);
+
     //self.vx = -(self.I-self.I0)*self.dIdx + 2*self.sigma*self.Jmap[1]# axis: [1]
     //self.vy = -(self.I-self.I0)*self.dIdy + 2*self.sigma*self.Jmap[0]# axis: [0]
-    m_vx = -(m_I-m_I0)*m_dIdx + (2.0*m_sigma)*m_Jmap[1]; //# axis: [1]
-    m_vy = -(m_I-m_I0)*m_dIdy + (2.0*m_sigma)*m_Jmap[0]; //# axis: [0]
+    const auto combine_sub1 = [](const double I, const double I0) {
+      return I - I0;
+    };
+    elem_set(m_tmpx, m_I, m_I0, combine_sub1);
+    const auto combine_func1 = [&](const double IsubI0, const double dIdx, const double Jmap) {
+      return -IsubI0 * dIdx + 2.0 * m_sigma * Jmap;
+    };
+    elem_set(m_vx, m_tmpx, m_dIdx, m_Jmap[1], combine_func1);
+    elem_set(m_vy, m_tmpx, m_dIdy, m_Jmap[0], combine_func1);
+    //m_vx = -(m_I-m_I0)*m_dIdx + (2.0*m_sigma)*m_Jmap[1]; //# axis: [1]
+    //m_vy = -(m_I-m_I0)*m_dIdy + (2.0*m_sigma)*m_Jmap[0]; //# axis: [0]
 
     //fftx = np.fft.fftn(self.vx)
     //ffty = np.fft.fftn(self.vy)
     //fftx *= self.Linv
     //ffty *= self.Linv
 
+    // TODO: This part is very slow and needs to be rewritten
     cdGrid fftx = to_cdGrid(m_vx);
     cdGrid ffty = to_cdGrid(m_vy);
     calc_fft(fftx);
     calc_fft(ffty);
     //cdGrid fftx = fftn(m_vx);
     //cdGrid ffty = fftn(m_vy);
-    fftx = mul(fftx, m_Linv);
-    ffty = mul(ffty, m_Linv);
+    self_mul(fftx, m_Linv);
+    self_mul(ffty, m_Linv);
 
     //self.vx[:] = -np.fft.ifftn(fftx).real # vx[:]=smth will copy while vx=smth directs a pointer
     //self.vy[:] = -np.fft.ifftn(ffty).real
@@ -447,41 +501,46 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     calc_ifft(fftx);
     calc_ifft(ffty);
     // Q: Real part or amplitude?
-    m_vx = -(real(fftx)); // vx[:]=smth will copy while vx=smth directs a pointer
-    m_vy = -(real(ffty));
+    const auto proc_elem1 = [](const std::complex<double> e) {
+      return -e.real();
+    };
+    elem_set(m_vx, fftx, proc_elem1);
+    elem_set(m_vy, ffty, proc_elem1);
+    //m_vx = -(real(fftx)); // vx[:]=smth will copy while vx=smth directs a pointer
+    //m_vy = -(real(ffty));
 
     // STEP 4 (v = -grad E, so to compute the inverse we solve \psiinv' = -epsilon*v o \psiinv)
     //np.copyto(self.tmpx, self.vx)
     //self.tmpx *= epsilon
-    m_tmpx = epsilon * m_vx;
+    elem_set(m_tmpx, m_vx, [&epsilon](const double v) { return epsilon * v; });
 
     //np.copyto(self.psiinvx, self.idx)
     //self.psiinvx -= self.tmpx
-    m_psiinvx = m_idx - m_tmpx;
+    elem_set(m_psiinvx, m_idx, m_tmpx, [](const double x, const double y) { return x - y; });
+
     //if self.compute_phi: # Compute forward phi also (only for output purposes)
     //  np.copyto(self.psix, self.idx)
     //  self.psix += self.tmpx
     if (m_compute_phi) // Compute forward phi also (only for output purposes)
-      m_psix = m_idx + m_tmpx;
+      elem_set(m_psix, m_idx, m_tmpx, [](const double x, const double y) { return x + y; });
+
     //np.copyto(self.tmpy, self.vy)
     //self.tmpy *= epsilon
-    m_tmpy = epsilon * m_vy;
+    elem_set(m_tmpy, m_vy, [&epsilon](const double v) { return epsilon * v; });
     //np.copyto(self.psiinvy, self.idy)
     //self.psiinvy -= self.tmpy
-    m_psiinvy = m_idy - m_tmpy;
+    elem_set(m_psiinvy, m_idy, m_tmpy, [](const double x, const double y) { return x - y; });
+
     //if self.compute_phi: # Compute forward phi also (only for output purposes)
     //  np.copyto(self.psiy, self.idy)
     //  self.psiy += self.tmpy
     if (m_compute_phi) // Compute forward phi also (only for output purposes)
-      m_psiy = m_idy + m_tmpy;
+      elem_set(m_psiy, m_idy, m_tmpy, [](const double x, const double y) { return x + y; });
 
     //self.diffeo_compose(self.phiinvx, self.phiinvy, self.psiinvx, self.psiinvy, \
     //          self.tmpx, self.tmpy) # Compute composition phi o psi = phi o (1-eps*v)
     //np.copyto(self.phiinvx, self.tmpx)
     //np.copyto(self.phiinvy, self.tmpy)
-    if (k == 7) {
-      int dbg = 0;
-    }
     diffeo_compose_2d(m_phiinvx, m_phiinvy, m_psiinvx, m_psiinvy, m_tmpx, m_tmpy);
     m_phiinvx = m_tmpx;
     m_phiinvy = m_tmpy;

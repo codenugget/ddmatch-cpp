@@ -119,6 +119,28 @@ public:
     return *this;
   }
 
+  TGrid& operator += (const TGrid<T>& other) {
+    if (is_same_shape(other)) {
+      const int n = size();
+      T* dst = data();
+      const T* src = other.data();
+      for (int i = 0; i < n; ++i)
+        dst[i] += src[i];
+    }
+    return *this;
+  }
+
+  TGrid& operator -= (const TGrid<T>& other) {
+    if (is_same_shape(other)) {
+      const int n = size();
+      T* dst = data();
+      const T* src = other.data();
+      for (int i = 0; i < n; ++i)
+        dst[i] -= src[i];
+    }
+    return *this;
+  }
+
   void reshape(int rows, int cols) {
     assert(rows >= 0);
     assert(cols >= 0);
@@ -280,6 +302,14 @@ TGrid<T> elem_func(const TGrid<T>& g, Predicate f) {
   return ret;
 }
 
+template<typename T, typename Predicate>
+void elem_func_inplace(TGrid<T>& g, Predicate f) {
+  const int n = g.size();
+  T* dst = g.data();
+  for (int i = 0; i < n; ++i)
+    dst[i] = f(dst[i]);
+}
+
 
 template<typename T>
 TGrid<T> operator+(const TGrid<T> &a, const TGrid<T> &b) {
@@ -318,6 +348,30 @@ T sum(const TGrid<T>& vals) {
 }
 
 
+template<typename T1, typename T2, typename Pred>
+bool elem_set(TGrid<T1>& res, const TGrid<T2>& a, Pred f) {
+  if (!res.is_same_shape(a))
+    return false;
+  int n = res.size();
+  T1* dst = res.data();
+  const T2* src_a = a.data();
+  for (int i = 0; i < n; ++i)
+    dst[i] = f(src_a[i]);
+  return true;
+}
+
+template<typename T, typename Pred>
+bool elem_set(TGrid<T>& res, const TGrid<T>& a, Pred f) {
+  if (!res.is_same_shape(a))
+    return false;
+  int n = res.size();
+  T* dst = res.data();
+  const T* src_a = a.data();
+  for (int i = 0; i < n; ++i)
+    dst[i] = f(src_a[i]);
+  return true;
+}
+
 template<typename T, typename Pred>
 bool elem_set(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, Pred f) {
   if (!res.is_same_shape(a) || !res.is_same_shape(b))
@@ -328,6 +382,21 @@ bool elem_set(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, Pred f) {
   const T* src_b = b.data();
   for (int i = 0; i < n; ++i)
       dst[i] = f(src_a[i], src_b[i]);
+  return true;
+}
+
+template<typename T, typename Pred>
+bool elem_set(TGrid<T>& res, const TGrid<T>& a, const TGrid<T>& b, const TGrid<T>& c, Pred f) {
+  if (!res.is_same_shape(a) || !res.is_same_shape(b) || !res.is_same_shape(c))
+    return false;
+  int n = res.size();
+  T* dst = res.data();
+  const T* src_a = a.data();
+  const T* src_b = b.data();
+  const T* src_c = b.data();
+  const T* src_d = b.data();
+  for (int i = 0; i < n; ++i)
+    dst[i] = f(src_a[i], src_b[i], src_c[i]);
   return true;
 }
 
@@ -382,6 +451,7 @@ TGrid<T> operator-(const TGrid<T> &a) {
   return ret;
 }
 
+
 template<typename T>
 TGrid<T> operator*(const T scale, const TGrid<T> &a) {
   TGrid<T> ret(a);
@@ -392,6 +462,18 @@ TGrid<T> operator*(const T scale, const TGrid<T> &a) {
   return ret;
 }
 
+inline bool self_mul(cdGrid& a, const dGrid& b) {
+  if (!a.is_same_shape(b))
+    return false;
+  int n = a.size();
+  std::complex<double>* dst = a.data();
+  const double* src = b.data();
+  for (int i = 0; i < n; ++i)
+    dst[i] *= src[i];
+  return true;
+}
+
+/*
 inline cdGrid mul(const cdGrid& a, const dGrid& b) {
   assert(a.is_same_shape(b));
   cdGrid ret = a;
@@ -402,7 +484,7 @@ inline cdGrid mul(const cdGrid& a, const dGrid& b) {
     dst[i] *= src[i];
   return ret;
 }
-
+*/
 inline dGrid real(const cdGrid& g) {
   dGrid ret(g.rows(), g.cols(), 0.0);
   int n = g.size();
