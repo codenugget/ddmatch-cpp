@@ -69,7 +69,8 @@ private:
   double m_sigma;
   bool m_compute_phi;
 
-  int m_s = 0; // TODO: fix width, height
+  int m_rows = 0;
+  int m_cols = 0;
 
   VecDbl m_E;
 

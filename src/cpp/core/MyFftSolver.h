@@ -28,14 +28,16 @@ inline void calc_fft(cdGrid& res) {
 
   for (int x = 0; x < Mc; ++x) {
     auto signal = get_col(x, res);
-    auto fft_sig = CZT(signal, Mr, Wr, A);
+    //auto fft_sig = CZT(signal, Mr, Wr, A);
+    auto fft_sig = DFT(signal);// , Mr, Wr, A);
     for (int i = 0; i < Mr; ++i)
       res[i][x] = fft_sig[i];
   }
 
   for (int y = 0; y < Mr; ++y) {
     auto signal = get_row(y, res);
-    auto fft_sig = CZT(signal, Mc, Wc, A);
+    //auto fft_sig = CZT(signal, Mc, Wc, A);
+    auto fft_sig = DFT(signal);// , Mc, Wc, A);
     for (int i = 0; i < Mc; ++i)
       res[y][i] = fft_sig[i];
   }
@@ -50,14 +52,16 @@ inline void calc_ifft(cdGrid& res) {
 
   for (int y = 0; y < Mr; ++y) {
     auto signal = get_row(y, res);
-    auto fft_sig = ICZT(signal, Mc, Wc, A);
+    //auto fft_sig = ICZT(signal, Mc, Wc, A);
+    auto fft_sig = IDFT(signal);// , Mc, Wc, A);
     for (int i = 0; i < Mc; ++i)
       res[y][i] = fft_sig[i];
   }
 
   for (int x = 0; x < Mc; ++x) {
     auto signal = get_col(x, res);
-    auto fft_sig = ICZT(signal, Mr, Wr, A);
+    auto fft_sig = IDFT(signal);// , Mr, Wr, A);
+    //auto fft_sig = ICZT(signal, Mr, Wr, A);
     for (int i = 0; i < Mr; ++i)
       res[i][x] = fft_sig[i];
   }

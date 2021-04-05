@@ -44,34 +44,8 @@ dGrid combine_warp(const dGrid& dx, const dGrid& dy) {
   return dx;
 }
 
-void run_and_save_example(const dGrid& I0, const dGrid& I1, const std::string& subpath, const std::string& desc)
-{
-  printf("%s Initializing\n", subpath.c_str());
-
-  bool compute_phi = true;
-  double alpha = 0.001;
-  double beta  = 0.03;
-  double sigma = 0.05;
-
-  auto [dfm, msg] = DiffeoFunctionMatching::create(I0, I1, alpha, beta, sigma, compute_phi);
-  if (!dfm) {
-    printf("ERROR: %s\n", msg.c_str());
-    return;
-  }
-
-  printf("%s Running\n", subpath.c_str());
-  int num_iters = 1000;
-  double epsilon = 0.1;
-  dfm->run(num_iters, epsilon);
-  
-  //if not path.exists(subpath):
-  //  os.makedirs(subpath)
-  fs::path root_path(subpath);
-  printf("%s: Creating plots\n", subpath.c_str());
-  fs::create_directories(root_path);
-
-  fs::path overview_path = root_path / "overview";
-  fs::create_directories(overview_path);
+void save_state(DiffeoFunctionMatching* dfm, const fs::path& folder_path) {
+  fs::create_directories(folder_path);
 
   //# 2x2 overview plot
   //plt1 = plt.figure(1, figsize=(11.7,9))
@@ -81,19 +55,19 @@ void run_and_save_example(const dGrid& I0, const dGrid& I1, const std::string& s
   //plt.imshow(dm.target, cmap='bone', vmin=dm.I0.min(), vmax=dm.I0.max())
   //plt.colorbar()
   //plt.title('Target image')
-  save_image(dfm->target(), overview_path/"target.png");
+  save_image(dfm->target(), folder_path / "target.png");
 
   //plt.subplot(2,2,2)
   //plt.imshow(dm.source, cmap='bone', vmin=dm.I0.min(), vmax=dm.I0.max())
   //plt.colorbar()
   //plt.title('Template image')
-  save_image(dfm->source(), overview_path/"template.png");
+  save_image(dfm->source(), folder_path / "template.png");
 
   //plt.subplot(2,2,3)
   //plt.imshow(dm.I, cmap='bone', vmin=dm.I0.min(), vmax=dm.I0.max())
   //plt.colorbar()
   //plt.title('Warped image')
-  save_image(dfm->warped(), overview_path/"warped.png");
+  save_image(dfm->warped(), folder_path / "warped.png");
 
   //plt.subplot(2,2,4)
   //# Forward warp    
@@ -104,9 +78,9 @@ void run_and_save_example(const dGrid& I0, const dGrid& I1, const std::string& s
   //#phiy = dm.phiinvy
   //plot_warp(phix, phiy, downsample=4)
   auto warped = combine_warp(dfm->phi_x(), dfm->phi_y());
-  save_image(warped, overview_path/"forward_warp.png");
+  save_image(warped, folder_path / "forward_warp.png");
   warped = combine_warp(dfm->phi_inv_x(), dfm->phi_inv_y());
-  save_image(warped, overview_path/"backward_warp.png");
+  save_image(warped, folder_path / "backward_warp.png");
   //plt.axis('equal')
   //warplim = [phix.min(), phix.max(), phiy.min(), phiy.max()]
   //warplim[0] = min(warplim[0], warplim[2])
@@ -147,6 +121,48 @@ void run_and_save_example(const dGrid& I0, const dGrid& I1, const std::string& s
   //plt.axis('off')
   //#plt.grid(color='black')
   //plt3.savefig(path.join(subpath, 'warp.png'), dpi=150, bbox_inches='tight')
+}
+
+void run_and_save_example(const dGrid& I0, const dGrid& I1, const std::string& subpath, const std::string& desc)
+{
+  printf("%s Initializing\n", subpath.c_str());
+
+  bool compute_phi = true;
+  double alpha = 0.001;
+  double beta  = 0.03;
+  double sigma = 0.05;
+
+  auto [dfm, msg] = DiffeoFunctionMatching::create(I0, I1, alpha, beta, sigma, compute_phi);
+  if (!dfm) {
+    printf("ERROR: %s\n", msg.c_str());
+    return;
+  }
+
+  printf("%s Running\n", subpath.c_str());
+  fs::path root_path(subpath);
+  fs::path overview_path = root_path / "overview";
+  fs::path steps_path = root_path / "steps";
+  fs::create_directories(overview_path);
+  fs::create_directories(steps_path);
+
+  int num_iters = 1000;
+  double epsilon = 0.1;
+
+  int loop_iters = 100;
+  int num_steps = num_iters / loop_iters;
+  int rest_iters = num_iters % loop_iters;
+  for (int s = 0; s < num_steps; ++s) {
+    dfm->run(loop_iters, epsilon);
+    std::string sub = std::to_string(loop_iters * (s+1));
+    save_state(dfm.get(), steps_path / sub);
+  }
+  if (rest_iters > 0) {
+    dfm->run(rest_iters, epsilon);
+    save_state(dfm.get(), steps_path / std::to_string(num_iters));
+  }
+  printf("%s: Creating plots\n", overview_path.string().c_str());
+
+  save_state(dfm.get(), overview_path);
   
   //# Output description
   //with open(path.join(subpath, 'description.txt'), 'w') as f:

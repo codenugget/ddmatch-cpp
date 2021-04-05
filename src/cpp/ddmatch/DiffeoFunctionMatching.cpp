@@ -97,7 +97,8 @@ void DiffeoFunctionMatching::setup() {
   //self.evaluate = eval_diffeo_2d;//generate_optimized_diffeo_evaluation(I1)
 
   // Allocate and initialize variables
-  m_s = I1.cols();
+  m_rows = I1.rows();
+  m_cols = I1.cols();
   //E = []
   m_E.resize(0);
 
@@ -125,8 +126,9 @@ void DiffeoFunctionMatching::setup() {
   // Allocate and initialize the diffeos
   //x = np.linspace(0, self.s, self.s, endpoint=False)
   //[self.idx, self.idy] = np.meshgrid(x, x)
-  auto x = my_linspace<double>(0, m_s, m_s, false);
-  std::tie(m_idx, m_idy) = my_meshgrid(x,x);
+  auto x = my_linspace<double>(0, m_cols, m_cols, false);
+  auto y = my_linspace<double>(0, m_rows, m_rows, false);
+  std::tie(m_idx, m_idy) = my_meshgrid(x,y);
 
   //self.phiinvx = self.idx.copy()
   //self.phiinvy = self.idy.copy()
@@ -276,16 +278,6 @@ void DiffeoFunctionMatching::setup() {
   }
 }
 
-cdGrid fftn(const dGrid& g) {
-  cdGrid ret(g.rows(), g.cols(), std::complex<double>(0.0, 0.0));
-  return ret;
-}
-
-cdGrid ifftn(const cdGrid& g) {
-  return g;
-}
-
-
 // niter   : Number of iterations to take.
 // epsilon : The stepsize in the gradient descent method.
 void DiffeoFunctionMatching::run(int niter, double epsilon) {
@@ -300,14 +292,15 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     // OUTPUT
     //np.copyto(self.tmpx, self.I)
     //np.copyto(self.tmpy, self.I0)
-    copyto(m_tmpx, m_I);
-    copyto(m_tmpy, m_I0);
-
     //self.tmpx = self.tmpx-self.tmpy
     //self.tmpx **= 2
     //self.E[k+kE] = self.tmpx.sum()
-    m_tmpx -= m_tmpy;
-    elem_func_inplace(m_tmpx, [](double v){ return v*v; });
+
+    //copyto(m_tmpx, m_I);
+    //copyto(m_tmpy, m_I0);
+    //m_tmpx -= m_tmpy;
+    //elem_func_inplace(m_tmpx, [](double v){ return v*v; });
+    elem_set(m_tmpx, m_I, m_I0, [](const double i, const double i0) { const double t = i - i0; return t*t; });
     m_E[k+kE] = sum(m_tmpx);
 
     //np.copyto(
