@@ -100,16 +100,19 @@ int main(int argc, char** argv)
   for(int y = 0; y < h; ++y) {
     for(int x = 0; x < w; ++x) {
       double v = 0;
+      unsigned char cv = 0;
       if (rand()%2 == 0) {
         v = 1;
+        cv = 255;
       }
       else {
         v = 0;
+        cv = 0;
       }
       data2d[y][x] = {v, 0.0};
-      iorig->set(x, y, 0, 255*v);
-      iorig->set(x, y, 1, 255*v);
-      iorig->set(x, y, 2, 255*v);
+      iorig->set(x, y, 0, cv);
+      iorig->set(x, y, 1, cv);
+      iorig->set(x, y, 2, cv);
     }
   }
 
@@ -152,27 +155,25 @@ int main(int argc, char** argv)
     for(int x = 0; x < w; ++x) {
       auto c = freq2d[y][x];
       double rl = 255.0 * (c.real()-min_real)/(max_real-min_real);
-      char cr = rl;
+      unsigned char cr = static_cast<unsigned char>(std::min(std::max(static_cast<int>(rl), 0), 255));
       ireal->set(x,y, 0, cr);
       ireal->set(x,y, 1, cr);
       ireal->set(x,y, 2, cr);
 
       double im = 255.0 * (c.imag()-min_imag)/(max_imag-min_imag);
-      char ci = im;
+      unsigned char ci = static_cast<unsigned char>(std::min(std::max(static_cast<int>(im), 0), 255));
       iimag->set(x,y, 0, ci);
       iimag->set(x,y, 1, ci);
       iimag->set(x,y, 2, ci);
 
       double a = 255.0*(std::norm(c) - min_A)/(max_A-min_A);
-      char ca = a;
+      unsigned char ca = static_cast<unsigned char>(std::min(std::max(static_cast<int>(a), 0), 255));
       iamp->set(x,y, 0, ca);
       iamp->set(x,y, 1, ca);
       iamp->set(x,y, 2, ca);
 
       double ph = 255.0*(std::arg(c) + M_PI)/(2*M_PI);
-      ph = ph < 0 ? 0 : ph;
-      ph = ph > 255 ? 255 : ph;
-      char cp = ph;
+      unsigned char cp = static_cast<unsigned char>(std::min(std::max(static_cast<int>(ph), 0), 255));
       ipha->set(x,y, 0, cp);
       ipha->set(x,y, 1, cp);
       ipha->set(x,y, 2, cp);
@@ -203,12 +204,7 @@ int main(int argc, char** argv)
       max_A = std::max(A, max_A);
       min_A = std::min(A, min_A);
 
-      A=255.0*A;
-      if (A < 0)
-        A = 0;
-      if (A > 255)
-        A = 255;
-      char ca = A;
+      unsigned char ca = static_cast<unsigned char>(std::max(std::min(static_cast<int>(A*255.0), 0), 255));
       ires->set(x,y,0, ca);
       ires->set(x,y,1, ca);
       ires->set(x,y,2, ca);

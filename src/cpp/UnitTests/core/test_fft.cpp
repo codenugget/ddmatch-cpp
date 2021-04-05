@@ -2,8 +2,25 @@
 
 #include "core/MyFft.h"
 
+TEST(fft_Test, DFT_IDFT_real1) {
+	std::vector<std::complex<double>> x{ {1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} };
+	std::vector<std::complex<double>> X = DFT(x);
+	const double cTolerance = 1e-10;
+	ASSERT_EQ(X.size(), 8);
+	for (int i = 0; i < 8; ++i) {
+		EXPECT_NEAR(X[i].real(), 1.0, cTolerance);
+		EXPECT_NEAR(X[i].imag(), 0, cTolerance);
+	}
 
-TEST(fft_Test, DFT_IDFT_real) {
+	std::vector<std::complex<double>> ix = IDFT(X);
+	ASSERT_EQ(ix.size(), 8);
+	for (int i = 0; i < 8; ++i) {
+		EXPECT_NEAR(ix[i].real(), x[i].real(), cTolerance);
+		EXPECT_NEAR(ix[i].imag(), x[i].imag(), cTolerance);
+	}
+}
+
+TEST(fft_Test, DFT_IDFT_real2) {
 	const double cTolerance = 1e-10;
 	{
 		std::vector<std::complex<double>> orig_values{1,4,3,2};
@@ -108,7 +125,7 @@ TEST(fft_Test, ZeroPad) {
 	}
 }
 
-TEST(fft_Test, ZeroPad_crash) {
+TEST(fft_Test, ZeroPad_crash_Debug) {
 #ifdef _DEBUG
 	{
 		std::vector<std::complex<double>> x {{1.0, 0.0}, {-1.0, 1.0}, {0.0, -1.0}};

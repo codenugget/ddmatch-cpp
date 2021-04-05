@@ -12,38 +12,30 @@
 #endif
 
 inline std::vector<std::complex<double>> DFT(const std::vector<std::complex<double>>& x) {
-	int N = static_cast<int>(x.size());
-	TGrid<std::complex<double>> grid(N,N,{0.0,0.0});
-	for(int r = 0; r < N; ++r) {
-		for(int c = 0; c < N; ++c) {
-			double Im = -2.0 * M_PI * static_cast<double>(r * c) / static_cast<double>(N);
-			grid[r][c] = std::exp(std::complex(0.0, Im));
-		}
-	}
-	std::vector<std::complex<double>> ret(N, {0.0,0.0});
-	for(int i = 0; i < N; ++i) {
-		for(int j = 0; j < N; ++j) {
-			ret[i] += grid[i][j] * x[j];
+	const int N = static_cast<int>(x.size());
+	const double invN = 1.0 / double(N);
+	std::vector<std::complex<double>> ret(N, { 0.0,0.0 });
+	for (int k = 0; k < N; ++k) {
+		for (int n = 0; n < N; ++n) {
+			double angle = -2.0 * M_PI * static_cast<double>(n * k) * invN;
+			std::complex term(cos(angle), sin(angle));
+			ret[k] += x[n] * term;
 		}
 	}
 	return ret;
 }
 
-
-inline std::vector<std::complex<double>> IDFT(const std::vector<std::complex<double>>& x) {
-	int N = static_cast<int>(x.size());
-	TGrid<std::complex<double>> grid(N,N,{0.0,0.0});
-	for(int r = 0; r < N; ++r) {
-		for(int c = 0; c < N; ++c) {
-			double Im = 2.0 * M_PI * static_cast<double>(r * c) / static_cast<double>(N);
-			grid[r][c] = std::exp(std::complex(0.0, Im));
+inline std::vector<std::complex<double>> IDFT(const std::vector<std::complex<double>>& X) {
+	const int N = static_cast<int>(X.size());
+	const double invN = 1.0 / double(N);
+	std::vector<std::complex<double>> ret(N, { 0.0, 0.0 });
+	for (int n = 0; n < N; ++n) {
+		for (int k = 0; k < N; ++k) {
+			double angle = 2.0 * M_PI * static_cast<double>(n * k) * invN;
+			std::complex term(cos(angle), sin(angle));
+			ret[n] += X[k] * term;
 		}
-	}
-	std::vector<std::complex<double>> ret(N, {0.0, 0.0});
-	for(int n = 0; n < N; ++n) {
-		for(int k=0; k < N; ++k)
-			ret[n] += x[k] * grid[n][k];
-		ret[n] /= static_cast<double>(N);
+		ret[n] *= invN;
 	}
 	return ret;
 }
@@ -59,12 +51,13 @@ inline std::vector<std::complex<double>> ZeroPad(const std::vector<std::complex<
 
 // Algorithm S5: Runs in O(n log n) time. NOTE: only works when length(x) is a power of two
 inline std::vector<std::complex<double>> FFT(const std::vector<std::complex<double>>& x) {
-	int n = static_cast<int>(x.size());
+	const int n = static_cast<int>(x.size());
 	if (n <= 1)
 		return x;
-	int nodd = n / 2 + ((n&1) ? 1 : 0);
+	const int neven = n / 2;
+	const int nodd = neven + ((n&1) ? 1 : 0);
 	std::vector<std::complex<double>> xe, xo;
-	xe.reserve(n / 2);
+	xe.reserve(neven);
 	xo.reserve(nodd);
 	bool even = true;
 	for(auto e : x) {
@@ -88,12 +81,13 @@ inline std::vector<std::complex<double>> FFT(const std::vector<std::complex<doub
 
 // Algorithm S6: Runs in O(n log n) time.
 inline std::vector<std::complex<double>> IFFT(const std::vector<std::complex<double>>& y) {
-	int n = static_cast<int>(y.size());
+	const int n = static_cast<int>(y.size());
 	if (n <= 1)
 		return y;
-	int nodd = n / 2 + ((n&1) ? 1 : 0);
+	const int neven = n / 2;
+	const int nodd = neven + ((n&1) ? 1 : 0);
 	std::vector<std::complex<double>> ye, yo;
-	ye.reserve(n / 2);
+	ye.reserve(neven);
 	yo.reserve(nodd);
 	bool even = true;
 	for(auto e : y) {
