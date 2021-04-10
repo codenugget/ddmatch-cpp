@@ -72,10 +72,10 @@ private:
   int m_rows = 0;
   int m_cols = 0;
 
-  VecDbl m_E;
+  VecDbl m_E; // Energy
 
-  dGrid m_I0;
-  dGrid m_I1;
+  //dGrid m_I0; // same as m_target
+  //dGrid m_I1; // same as m_source
   dGrid m_I;
 
   dGrid m_dIdx;

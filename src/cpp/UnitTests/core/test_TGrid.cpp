@@ -74,17 +74,17 @@ TEST(TGrid_Test, Constructor) {
   }
 }
 
-TEST(TGrid_Test, OutOfBounds) {
-  TGrid<int> grid(2,2, 0);
 #ifdef _DEBUG
+TEST(TGrid_Test, OutOfBounds_CrashDebug) {
+  TGrid<int> grid(2,2, 0);
   EXPECT_DEATH(grid[-1][0], "");
   EXPECT_DEATH(grid[0][-1], "");
   EXPECT_DEATH(grid[-1][-1], "");
   EXPECT_DEATH(grid[2][0], "");
   EXPECT_DEATH(grid[0][2], "");
   EXPECT_DEATH(grid[2][2], "");
-#endif
 }
+#endif
 
 
 TEST(TGrid_Test, values_like) {
@@ -446,5 +446,78 @@ TEST(TGrid_Test, operator_scale) {
     const float* v = b.data();
     for(int i = 0; i < b.size(); ++i)
       EXPECT_NEAR(v[i], 123.0f, cEpsilon);
+  }
+}
+
+TEST(TGrid_Test, MyLinspace) {
+  {
+    auto x = MyLinspace<double>(0.0, 5.0, 5, false);
+    ASSERT_EQ(x.size(), 5);
+    double epsilon = 1e-10;
+    EXPECT_NEAR(x[0], 0.0, epsilon);
+    EXPECT_NEAR(x[1], 1.0, epsilon);
+    EXPECT_NEAR(x[2], 2.0, epsilon);
+    EXPECT_NEAR(x[3], 3.0, epsilon);
+    EXPECT_NEAR(x[4], 4.0, epsilon);
+  }
+  {
+    auto x = MyLinspace<double>(0.0, 5.0, 5, true);
+    ASSERT_EQ(x.size(), 5);
+    double epsilon = 1e-10;
+    EXPECT_NEAR(x[0], 0.0, epsilon);
+    EXPECT_NEAR(x[1], 0.25 * 5.0, epsilon);
+    EXPECT_NEAR(x[2], 0.5 * 5.0, epsilon);
+    EXPECT_NEAR(x[3], 0.75 * 5.0, epsilon);
+    EXPECT_NEAR(x[4], 5.0, epsilon);
+  }
+}
+
+TEST(TGrid_Test, MyMeshGrid_xy) {
+  {
+    auto x = MyLinspace<double>(0.0, 5.0, 5, false);
+    auto y = MyLinspace<double>(0.0, 3.0, 3, false);
+    const auto[gx, gy] = MyMeshGrid(x, y);
+    double epsilon = 1e-10;
+    ASSERT_EQ(gx.cols(), 5);
+    ASSERT_EQ(gx.rows(), 3);
+    for (int r = 0; r < 3; ++r) {
+      EXPECT_NEAR(gx[r][0], 0.0, epsilon);
+      EXPECT_NEAR(gx[r][1], 1.0, epsilon);
+      EXPECT_NEAR(gx[r][2], 2.0, epsilon);
+      EXPECT_NEAR(gx[r][3], 3.0, epsilon);
+      EXPECT_NEAR(gx[r][4], 4.0, epsilon);
+    }
+    ASSERT_EQ(gy.cols(), 5);
+    ASSERT_EQ(gy.rows(), 3);
+    for (int c = 0; c < 3; ++c) {
+      EXPECT_NEAR(gy[0][c], 0.0, epsilon);
+      EXPECT_NEAR(gy[1][c], 1.0, epsilon);
+      EXPECT_NEAR(gy[2][c], 2.0, epsilon);
+    }
+  }
+}
+
+TEST(TGrid_Test, MyMeshGrid_ij) {
+  {
+    auto x = MyLinspace<double>(0.0, 5.0, 5, false);
+    auto y = MyLinspace<double>(0.0, 3.0, 3, false);
+    const auto [gx, gy] = MyMeshGrid(x, y, Indexing::ij);
+    double epsilon = 1e-10;
+    ASSERT_EQ(gx.cols(), 3);
+    ASSERT_EQ(gx.rows(), 5);
+    for (int c = 0; c < 3; ++c) {
+      EXPECT_NEAR(gx[0][c], 0.0, epsilon);
+      EXPECT_NEAR(gx[1][c], 1.0, epsilon);
+      EXPECT_NEAR(gx[2][c], 2.0, epsilon);
+      EXPECT_NEAR(gx[3][c], 3.0, epsilon);
+      EXPECT_NEAR(gx[4][c], 4.0, epsilon);
+    }
+    ASSERT_EQ(gy.cols(), 3);
+    ASSERT_EQ(gy.rows(), 5);
+    for (int r = 0; r < 5; ++r) {
+      EXPECT_NEAR(gy[r][0], 0.0, epsilon);
+      EXPECT_NEAR(gy[r][1], 1.0, epsilon);
+      EXPECT_NEAR(gy[r][2], 2.0, epsilon);
+    }
   }
 }

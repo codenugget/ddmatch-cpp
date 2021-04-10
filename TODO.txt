@@ -1,4 +1,5 @@
 High:
+[ ] Draw the deformed grid
 [ ] Verify that ddm implemenation works (or does not work)
 [ ] Generalize to arbitrary width / height
 [ ] Profiling

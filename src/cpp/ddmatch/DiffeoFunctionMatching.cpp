@@ -5,65 +5,7 @@
 #include "Diffeo_functions.h"
 
 #include "core/MyFftSolver.h"
-
-template<typename T>
-std::vector<T> my_linspace(T start, T stop, int num, bool endpoint) {
-  std::vector<T> ret(num, T(0));
-  double step = 0;
-  if (endpoint)
-    step = double(stop-start) / (num-1);
-  else
-    step = double(stop-start) / num;
-
-  for(int i = 0; i < num; ++i)
-    ret[i] = T(start + i * step);
-  return ret;
-}
-
-enum class Indexing {
-  xy,
-  ij
-};
-std::tuple<dGrid,dGrid> my_meshgrid(
-  const std::vector<double>& x,
-  const std::vector<double>& y,
-  Indexing i = Indexing::xy) {
-  switch(i) {
-    case Indexing::xy: {
-      int nx = (int)x.size();
-      int ny = (int)y.size();
-      dGrid xx(ny, nx, 0.0);
-      dGrid yy(ny, nx, 0.0);
-
-      for(int iy = 0; iy < ny; ++iy) {
-        for(int ix = 0; ix < nx; ++ix) {
-          xx[iy][ix] = x[ix];
-          yy[iy][ix] = y[iy];
-        }
-      }
-      return std::make_tuple(xx, yy);
-    }
-    case Indexing::ij: {
-      // TODO: verify this case
-      int nx = (int)x.size();
-      int ny = (int)y.size();
-      dGrid xx(ny, nx, 0.0);
-      dGrid yy(ny, nx, 0.0);
-
-      for(int iy = 0; iy < ny; ++iy) {
-        for(int ix = 0; ix < nx; ++ix) {
-          xx[iy][ix] = y[ix];
-          yy[iy][ix] = x[iy];
-        }
-      }
-      return std::make_tuple(xx, yy);
-    }
-    default: {
-      // unknown / unsupported case
-      return std::make_tuple(dGrid{}, dGrid{});
-    }
-  }
-}
+#include "core/MyArrays.h"
 
 std::tuple<std::unique_ptr<DiffeoFunctionMatching>, std::string> DiffeoFunctionMatching::create(
     const dGrid& source, const dGrid& target,
@@ -104,10 +46,10 @@ void DiffeoFunctionMatching::setup() {
 
   //self.I0 = np.zeros_like(I0)
   //np.copyto(self.I0,I0)
-  m_I0 = I0;
+  // m_I0 = I0; // same as m_target
   //self.I1 = np.zeros_like(I1)
   //np.copyto(self.I1,I1)
-  m_I1 = I1;
+  //m_I1 = I1; // same as m_source
   //self.I = np.zeros_like(I1)
   //np.copyto(self.I,I1)
   m_I = I1;
@@ -126,9 +68,9 @@ void DiffeoFunctionMatching::setup() {
   // Allocate and initialize the diffeos
   //x = np.linspace(0, self.s, self.s, endpoint=False)
   //[self.idx, self.idy] = np.meshgrid(x, x)
-  auto x = my_linspace<double>(0, m_cols, m_cols, false);
-  auto y = my_linspace<double>(0, m_rows, m_rows, false);
-  std::tie(m_idx, m_idy) = my_meshgrid(x,y);
+  auto x = MyLinspace<double>(0, m_cols, m_cols, false);
+  auto y = MyLinspace<double>(0, m_rows, m_rows, false);
+  std::tie(m_idx, m_idy) = MyMeshGrid(x,y);
 
   //self.phiinvx = self.idx.copy()
   //self.phiinvy = self.idy.copy()
@@ -221,6 +163,8 @@ void DiffeoFunctionMatching::setup() {
 
   // Create wavenumber vectors
   //k = [np.hstack((np.arange(n//2),np.arange(-n//2,0))) for n in self.I0.shape]
+  // floor(n/2);
+  // floor(-n/2);
   dGrid k(2, I1.rows(), 0.0);
 
   auto to_double = [](const VecInt& v) -> VecDbl {
@@ -232,9 +176,9 @@ void DiffeoFunctionMatching::setup() {
   };
 
   //k.resize(2);
-  auto v1 = to_double(my_linspace<int>(0, I1.cols(), I1.rows(), false));
+  auto v1 = to_double(MyLinspace<int>(0, I1.cols(), I1.rows(), false));
   copyto(k[0], v1);
-  auto v2 = to_double(my_linspace<int>(-I1.cols(), 0, I1.rows(), false));
+  auto v2 = to_double(MyLinspace<int>(-I1.cols(), 0, I1.rows(), false));
   copyto(k[1], v2);
 
   /* not completed yet
@@ -242,7 +186,7 @@ void DiffeoFunctionMatching::setup() {
   K = np.meshgrid(*k, sparse=False, indexing='ij')
   */
   dGrid Kx, Ky;
-  std::tie(Kx, Ky) = my_meshgrid(v1, v2, Indexing::ij);
+  std::tie(Kx, Ky) = MyMeshGrid(v1, v2, Indexing::ij);
 
   // Create Fourier multiplicator
   //self.multipliers = np.ones_like(K[0])
@@ -300,7 +244,12 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     //copyto(m_tmpy, m_I0);
     //m_tmpx -= m_tmpy;
     //elem_func_inplace(m_tmpx, [](double v){ return v*v; });
-    elem_set(m_tmpx, m_I, m_I0, [](const double i, const double i0) { const double t = i - i0; return t*t; });
+    const auto diff_sq = [](const double v1, const double v2) {
+      double v = (v1 - v2);
+      return v * v;
+    };
+    elem_set(m_tmpx, m_I, m_target, diff_sq);
+    //elem_set(m_tmpx, m_I, m_I0, diff_sq);
     m_E[k+kE] = sum(m_tmpx);
 
     //np.copyto(
@@ -310,10 +259,6 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     //  (self.h[0,1]-self.g[0,1])**2 +
     //  (self.h[1,1]-self.g[1,1])**2
     //)
-    const auto diff_sq = [](const double v1, const double v2){
-      double v = (v1-v2);
-      return v*v;
-    };
     elem_set(m_tmpx, m_h[0][0], m_g[0][0], diff_sq);
     elem_add(m_tmpx, m_h[1][0], m_g[1][0], diff_sq);
     elem_add(m_tmpx, m_h[0][1], m_g[0][1], diff_sq);
@@ -323,7 +268,8 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     m_E[k+kE] += m_sigma * sum(m_tmpx);
 
     //self.image_compose(self.I1, self.phiinvx, self.phiinvy, self.I)
-    image_compose_2d(m_I1, m_phiinvx, m_phiinvy, m_I);
+    //image_compose_2d(m_I1, m_phiinvx, m_phiinvy, m_I);
+    image_compose_2d(m_source, m_phiinvx, m_phiinvy, m_I);
 
     //self.diffeo_gradient_y(self.phiinvy, self.yddx, self.yddy)
     //self.diffeo_gradient_x(self.phiinvx, self.xddx, self.xddy)
@@ -461,17 +407,17 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
 
     //self.vx = -(self.I-self.I0)*self.dIdx + 2*self.sigma*self.Jmap[1]# axis: [1]
     //self.vy = -(self.I-self.I0)*self.dIdy + 2*self.sigma*self.Jmap[0]# axis: [0]
-    const auto combine_sub1 = [](const double I, const double I0) {
-      return I - I0;
+    const auto combine_sub1 = [](const double I, const double Target) {
+      return I - Target;
     };
-    elem_set(m_tmpx, m_I, m_I0, combine_sub1);
-    const auto combine_func1 = [&](const double IsubI0, const double dIdx, const double Jmap) {
-      return -IsubI0 * dIdx + 2.0 * m_sigma * Jmap;
+    elem_set(m_tmpx, m_I, m_target, combine_sub1);
+    const auto combine_func1 = [&](const double IsubTgt, const double dIdx, const double Jmap) {
+      return -IsubTgt * dIdx + 2.0 * m_sigma * Jmap;
     };
     elem_set(m_vx, m_tmpx, m_dIdx, m_Jmap[1], combine_func1);
     elem_set(m_vy, m_tmpx, m_dIdy, m_Jmap[0], combine_func1);
-    //m_vx = -(m_I-m_I0)*m_dIdx + (2.0*m_sigma)*m_Jmap[1]; //# axis: [1]
-    //m_vy = -(m_I-m_I0)*m_dIdy + (2.0*m_sigma)*m_Jmap[0]; //# axis: [0]
+    //m_vx = -(m_I-m_target)*m_dIdx + (2.0*m_sigma)*m_Jmap[1]; //# axis: [1]
+    //m_vy = -(m_I-m_target)*m_dIdy + (2.0*m_sigma)*m_Jmap[0]; //# axis: [0]
 
     //fftx = np.fft.fftn(self.vx)
     //ffty = np.fft.fftn(self.vy)
@@ -551,319 +497,3 @@ void DiffeoFunctionMatching::run(int niter, double epsilon) {
     }
   }
 }
-
-/*
-      np.copyto(self.h[0,0], self.yddy*self.yddy+self.xddy*self.xddy)
-      np.copyto(self.h[1,0], self.yddx*self.yddy+self.xddx*self.xddy)
-      np.copyto(self.h[0,1], self.yddy*self.yddx+self.xddy*self.xddx)
-      np.copyto(self.h[1,1], self.yddx*self.yddx+self.xddx*self.xddx)
-
-      self.image_gradient(self.h[0,0], self.dhaadx, self.dhaady)
-      self.image_gradient(self.h[0,1], self.dhabdx, self.dhabdy)
-      self.image_gradient(self.h[1,0], self.dhbadx, self.dhbady)
-      self.image_gradient(self.h[1,1], self.dhbbdx, self.dhbbdy)
-
-      np.copyto(self.Jmap[0], -(self.h[0,0]-self.g[0,0])*self.dhaady -(self.h[0,1]-self.g[0,1])*self.dhabdy -(self.h[1,0]-self.g[1,0])*self.dhbady -(self.h[1,1]-self.g[1,1])*self.dhbbdy +\
-        2*self.dhaady*self.h[0,0] + 2*self.dhabdx*self.h[0,0] + 2*self.dhbady*self.h[1,0] + 2*self.dhbbdx*self.h[1,0] +\
-        2*(self.h[0,0]-self.g[0,0])*self.dhaady + 2*(self.h[1,0]-self.g[1,0])*self.dhbady + 2*(self.h[0,1]-self.g[0,1])*self.dhaadx + 2*(self.h[1,1]-self.g[1,1])*self.dhbadx)
-      
-      np.copyto(self.Jmap[1], -(self.h[0,0]-self.g[0,0])*self.dhaadx -(self.h[0,1]-self.g[0,1])*self.dhabdx -(self.h[1,0]-self.g[1,0])*self.dhbadx -(self.h[1,1]-self.g[1,1])*self.dhbbdx +\
-        2*self.dhaady*self.h[0,1] + 2*self.dhabdx*self.h[0,1] + 2*self.dhbady*self.h[1,1] + 2*self.dhbbdx*self.h[1,1] +\
-        2*(self.h[0,0]-self.g[0,0])*self.dhabdy + 2*(self.h[1,0]-self.g[1,0])*self.dhbbdy + 2*(self.h[0,1]-self.g[0,1])*self.dhabdx + 2*(self.h[1,1]-self.g[1,1])*self.dhbbdx)
-
-      self.image_gradient(self.I, self.dIdx, self.dIdy)
-      self.vx = -(self.I-self.I0)*self.dIdx + 2*self.sigma*self.Jmap[1]# axis: [1]
-      self.vy = -(self.I-self.I0)*self.dIdy + 2*self.sigma*self.Jmap[0]# axis: [0]
-      fftx = np.fft.fftn(self.vx)
-      ffty = np.fft.fftn(self.vy)
-      fftx *= self.Linv
-      ffty *= self.Linv
-      self.vx[:] = -np.fft.ifftn(fftx).real # vx[:]=smth will copy while vx=smth directs a pointer
-      self.vy[:] = -np.fft.ifftn(ffty).real
-
-      # STEP 4 (v = -grad E, so to compute the inverse we solve \psiinv' = -epsilon*v o \psiinv)
-      np.copyto(self.tmpx, self.vx)
-      self.tmpx *= epsilon
-      np.copyto(self.psiinvx, self.idx)
-      self.psiinvx -= self.tmpx
-      if self.compute_phi: # Compute forward phi also (only for output purposes)
-        np.copyto(self.psix, self.idx)
-        self.psix += self.tmpx
-
-      np.copyto(self.tmpy, self.vy)
-      self.tmpy *= epsilon
-      np.copyto(self.psiinvy, self.idy)
-      self.psiinvy -= self.tmpy
-      if self.compute_phi: # Compute forward phi also (only for output purposes)
-        np.copyto(self.psiy, self.idy)
-        self.psiy += self.tmpy
-
-      self.diffeo_compose(self.phiinvx, self.phiinvy, self.psiinvx, self.psiinvy, \
-                self.tmpx, self.tmpy) # Compute composition phi o psi = phi o (1-eps*v)
-      np.copyto(self.phiinvx, self.tmpx)
-      np.copyto(self.phiinvy, self.tmpy)
-      if self.compute_phi: # Compute forward phi also (only for output purposes)
-        self.diffeo_compose(self.psix, self.psiy, \
-                  self.phix, self.phiy, \
-                  self.tmpx, self.tmpy)
-        np.copyto(self.phix, self.tmpx)
-        np.copyto(self.phiy, self.tmpy)
-*/
-
-
-/*
-
-class DiffeoFunctionMatching(object):
-  """
-  Implementation of the two component function matching algorithm.
-
-  The computations are accelerated using the `numba` library.
-  """
-
-  def __init__(self, source, target, alpha=0.001, beta=0.03, sigma=0.5, compute_phi=True):
-    """
-    Initialize the matching process.
-
-    Implements to algorithm in the paper by Modin and Karlsson (to be published).
-
-    Parameters
-    ----------
-    source : array_like
-      Numpy array (float64) for the source image.
-    target : array_like
-      Numpy array (float64) for the target image.
-      Must be of the same shape as `source`.
-    sigma : float
-      Parameter for penalizing change of volume (divergence).
-    compute_phi : bool
-      Whether to compute the forward phi mapping or not.
-
-    Returns
-    -------
-    None or Python generator
-
-    See also
-    --------
-    N/A
-
-    Examples
-    --------
-    N/A
-    """ 
-    
-    self.source = source
-    self.target = target
-    self.compute_phi = compute_phi
-    I0 = target
-    I1 = source
-
-    # Check input
-    if (I0.shape != I1.shape):
-      raise(TypeError('Source and target images must have the same shape.'))
-    if (I0.dtype != I1.dtype):
-      raise(TypeError('Source and target images must have the same dtype.'))
-    if (sigma < 0):
-      raise(ValueError('Paramter sigma must be positive.'))
-    for d in I1.shape:
-      if (d != I1.shape[0]):
-        raise(NotImplementedError('Only square images allowed so far.'))
-    if (len(I1.shape) != 2):
-      raise(NotImplementedError('Only 2d images allowed so far.'))
-
-    # Create optimized algorithm functions
-    self.image_compose = generate_optimized_image_composition(I1)
-    self.diffeo_compose = generate_optimized_diffeo_composition(I1)
-    self.image_gradient = generate_optimized_image_gradient(I1)
-    self.diffeo_gradient_y = generate_optimized_diffeo_gradient_y(I1)
-    self.diffeo_gradient_x = generate_optimized_diffeo_gradient_x(I1)
-    self.evaluate = generate_optimized_diffeo_evaluation(I1)
-
-    # Allocate and initialize variables
-    self.alpha = alpha
-    self.beta = beta
-    self.sigma = sigma
-    self.s = I1.shape[0]
-    self.E = []
-    self.I0 = np.zeros_like(I0)
-    np.copyto(self.I0,I0)
-    self.I1 = np.zeros_like(I1)
-    np.copyto(self.I1,I1)
-    self.I = np.zeros_like(I1)
-    np.copyto(self.I,I1)
-    self.dIdx = np.zeros_like(I1)
-    self.dIdy = np.zeros_like(I1)
-    self.vx = np.zeros_like(I1)
-    self.vy = np.zeros_like(I1)
-    self.divv = np.zeros_like(I1)
-        
-    # Allocate and initialize the diffeos
-    x = np.linspace(0, self.s, self.s, endpoint=False)
-    [self.idx, self.idy] = np.meshgrid(x, x)
-    self.phiinvx = self.idx.copy()
-    self.phiinvy = self.idy.copy()
-    self.psiinvx = self.idx.copy()
-    self.psiinvy = self.idy.copy()
-    if self.compute_phi:
-      self.phix = self.idx.copy()
-      self.phiy = self.idy.copy() 
-      self.psix = self.idx.copy()
-      self.psiy = self.idy.copy() 
-    self.tmpx = self.idx.copy()
-    self.tmpy = self.idy.copy()
-
-    # test case
-    #self.phiinvy += 5.e-8*self.phiinvy**2*(self.s-1-self.phiinvy)**2 + 5.e-8*self.phiinvx**2*(self.s-1-self.phiinvx)**2# compare with += 3.e-7*(...)
-    #self.phiinvx += 1.e-7*self.phiinvx**2*(self.s-1-self.phiinvx)**2
-
-
-    # Allocate and initialize the metrics
-    self.g = np.array([[np.ones_like(I1),np.zeros_like(I1)],[np.zeros_like(I1),np.ones_like(I1)]])
-    self.h = np.array([[np.ones_like(I1),np.zeros_like(I1)],[np.zeros_like(I1),np.ones_like(I1)]])
-    self.hdet = np.zeros_like(I1)
-    self.dhaadx = np.zeros_like(I1)
-    self.dhbadx = np.zeros_like(I1)
-    self.dhabdx = np.zeros_like(I1)
-    self.dhbbdx = np.zeros_like(I1)
-    self.dhaady = np.zeros_like(I1)
-    self.dhbady = np.zeros_like(I1)
-    self.dhabdy = np.zeros_like(I1)
-    self.dhbbdy = np.zeros_like(I1)
-    self.yddy = np.zeros_like(I1)
-    self.yddx = np.zeros_like(I1)
-    self.xddy = np.zeros_like(I1)
-    self.xddx = np.zeros_like(I1)
-    self.G = np.zeros_like(np.array([self.g,self.g]))
-    self.Jmap = np.zeros_like(np.array([I1,I1]))
-
-    # Create wavenumber vectors
-    k = [np.hstack((np.arange(n//2),np.arange(-n//2,0))) for n in self.I0.shape]
-
-    # Create wavenumber tensors
-    K = np.meshgrid(*k, sparse=False, indexing='ij')
-
-    # Create Fourier multiplicator
-    self.multipliers = np.ones_like(K[0])
-    self.multipliers = self.multipliers*self.alpha
-    for Ki in K:
-      Ki = Ki*self.beta
-      self.multipliers = self.multipliers+Ki**2
-    if self.alpha == 0:
-      self.multipliers[0,0]=1.0#self.multipliers[(0 for _ in self.s)] = 1. # Avoid division by zero
-      self.Linv = 1./self.multipliers
-      self.multipliers[0,0]=0.
-    else:
-      self.Linv = 1./self.multipliers
-
-    
-  def run(self, niter=300, epsilon=0.1):
-    """
-    Carry out the matching process.
-
-    Implements to algorithm in the paper by Modin and Karlsson (to appear).
-
-    Parameters
-    ----------
-    niter : int
-      Number of iterations to take.
-    epsilon : float
-      The stepsize in the gradient descent method.
-    yielditer : bool
-      If `True`, then a yield statement is executed at the start of
-      each iterations. This is useful for example when animating 
-      the warp in real-time.
-
-    Returns
-    -------
-    None or Python generator
-
-    See also
-    --------
-    N/A
-
-    Examples
-    --------
-    N/A
-    """   
-
-    kE = len(self.E)
-    self.E = np.hstack((self.E,np.zeros(niter)))
-
-    for k in range(niter):
-      
-      # OUTPUT
-      np.copyto(self.tmpx, self.I)
-      np.copyto(self.tmpy, self.I0)
-      self.tmpx = self.tmpx-self.tmpy
-      self.tmpx **= 2
-      self.E[k+kE] = self.tmpx.sum()
-      np.copyto(self.tmpx, (self.h[0,0]-self.g[0,0])**2+(self.h[1,0]-self.g[1,0])**2+\
-        (self.h[0,1]-self.g[0,1])**2+(self.h[1,1]-self.g[1,1])**2)
-      self.E[k+kE] += self.sigma*self.tmpx.sum()
-
-      self.image_compose(self.I1, self.phiinvx, self.phiinvy, self.I)
-      
-      self.diffeo_gradient_y(self.phiinvy, self.yddx, self.yddy)
-      self.diffeo_gradient_x(self.phiinvx, self.xddx, self.xddy)
-      np.copyto(self.h[0,0], self.yddy*self.yddy+self.xddy*self.xddy)
-      np.copyto(self.h[1,0], self.yddx*self.yddy+self.xddx*self.xddy)
-      np.copyto(self.h[0,1], self.yddy*self.yddx+self.xddy*self.xddx)
-      np.copyto(self.h[1,1], self.yddx*self.yddx+self.xddx*self.xddx)
-
-      self.image_gradient(self.h[0,0], self.dhaadx, self.dhaady)
-      self.image_gradient(self.h[0,1], self.dhabdx, self.dhabdy)
-      self.image_gradient(self.h[1,0], self.dhbadx, self.dhbady)
-      self.image_gradient(self.h[1,1], self.dhbbdx, self.dhbbdy)
-
-      np.copyto(self.Jmap[0], -(self.h[0,0]-self.g[0,0])*self.dhaady -(self.h[0,1]-self.g[0,1])*self.dhabdy -(self.h[1,0]-self.g[1,0])*self.dhbady -(self.h[1,1]-self.g[1,1])*self.dhbbdy +\
-        2*self.dhaady*self.h[0,0] + 2*self.dhabdx*self.h[0,0] + 2*self.dhbady*self.h[1,0] + 2*self.dhbbdx*self.h[1,0] +\
-        2*(self.h[0,0]-self.g[0,0])*self.dhaady + 2*(self.h[1,0]-self.g[1,0])*self.dhbady + 2*(self.h[0,1]-self.g[0,1])*self.dhaadx + 2*(self.h[1,1]-self.g[1,1])*self.dhbadx)
-      
-      np.copyto(self.Jmap[1], -(self.h[0,0]-self.g[0,0])*self.dhaadx -(self.h[0,1]-self.g[0,1])*self.dhabdx -(self.h[1,0]-self.g[1,0])*self.dhbadx -(self.h[1,1]-self.g[1,1])*self.dhbbdx +\
-        2*self.dhaady*self.h[0,1] + 2*self.dhabdx*self.h[0,1] + 2*self.dhbady*self.h[1,1] + 2*self.dhbbdx*self.h[1,1] +\
-        2*(self.h[0,0]-self.g[0,0])*self.dhabdy + 2*(self.h[1,0]-self.g[1,0])*self.dhbbdy + 2*(self.h[0,1]-self.g[0,1])*self.dhabdx + 2*(self.h[1,1]-self.g[1,1])*self.dhbbdx)
-
-      self.image_gradient(self.I, self.dIdx, self.dIdy)
-      self.vx = -(self.I-self.I0)*self.dIdx + 2*self.sigma*self.Jmap[1]# axis: [1]
-      self.vy = -(self.I-self.I0)*self.dIdy + 2*self.sigma*self.Jmap[0]# axis: [0]
-      fftx = np.fft.fftn(self.vx)
-      ffty = np.fft.fftn(self.vy)
-      fftx *= self.Linv
-      ffty *= self.Linv
-      self.vx[:] = -np.fft.ifftn(fftx).real # vx[:]=smth will copy while vx=smth directs a pointer
-      self.vy[:] = -np.fft.ifftn(ffty).real
-
-      # STEP 4 (v = -grad E, so to compute the inverse we solve \psiinv' = -epsilon*v o \psiinv)
-      np.copyto(self.tmpx, self.vx)
-      self.tmpx *= epsilon
-      np.copyto(self.psiinvx, self.idx)
-      self.psiinvx -= self.tmpx
-      if self.compute_phi: # Compute forward phi also (only for output purposes)
-        np.copyto(self.psix, self.idx)
-        self.psix += self.tmpx
-
-      np.copyto(self.tmpy, self.vy)
-      self.tmpy *= epsilon
-      np.copyto(self.psiinvy, self.idy)
-      self.psiinvy -= self.tmpy
-      if self.compute_phi: # Compute forward phi also (only for output purposes)
-        np.copyto(self.psiy, self.idy)
-        self.psiy += self.tmpy
-
-      self.diffeo_compose(self.phiinvx, self.phiinvy, self.psiinvx, self.psiinvy, \
-                self.tmpx, self.tmpy) # Compute composition phi o psi = phi o (1-eps*v)
-      np.copyto(self.phiinvx, self.tmpx)
-      np.copyto(self.phiinvy, self.tmpy)
-      if self.compute_phi: # Compute forward phi also (only for output purposes)
-        self.diffeo_compose(self.psix, self.psiy, \
-                  self.phix, self.phiy, \
-                  self.tmpx, self.tmpy)
-        np.copyto(self.phix, self.tmpx)
-        np.copyto(self.phiy, self.tmpy)
-
-if __name__ == '__main__':
-  pass
-
-
-# ON COPYTO
-# https://stackoverflow.com/questions/6431973/how-to-copy-data-from-a-numpy-array-to-another
-*/

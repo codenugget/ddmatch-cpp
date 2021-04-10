@@ -504,3 +504,64 @@ inline dGrid imag(const cdGrid& g) {
     dst[i] = src[i].imag();
   return ret;
 }
+
+
+template<typename T>
+std::vector<T> MyLinspace(T start, T stop, int num, bool endpoint) {
+  std::vector<T> ret(num, T(0));
+  double step = 0;
+  if (endpoint)
+    step = double(stop - start) / (num - 1);
+  else
+    step = double(stop - start) / num;
+
+  for (int i = 0; i < num; ++i)
+    ret[i] = T(start + i * step);
+  return ret;
+}
+
+enum class Indexing {
+  xy,
+  ij
+};
+inline std::tuple<dGrid, dGrid> MyMeshGrid(
+  const std::vector<double>& x,
+  const std::vector<double>& y,
+  Indexing i = Indexing::xy) {
+  switch (i) {
+  case Indexing::xy: {
+    int nr = (int)y.size();
+    int nc = (int)x.size();
+    dGrid xx(nr, nc, 0.0);
+    dGrid yy(nr, nc, 0.0);
+
+    for (int r = 0; r < nr; ++r) {
+      for (int c = 0; c < nc; ++c) {
+        xx[r][c] = x[c];
+        yy[r][c] = y[r];
+      }
+    }
+    return std::make_tuple(xx, yy);
+  }
+  case Indexing::ij: {
+    // TODO: verify this case
+    int nr = (int)x.size();
+    int nc = (int)y.size();
+    dGrid xx(nr, nc, 0.0);
+    dGrid yy(nr, nc, 0.0);
+
+    for (int r = 0; r < nr; ++r) {
+      for (int c = 0; c < nc; ++c) {
+        xx[r][c] = x[r];
+        yy[r][c] = y[c];
+      }
+    }
+    return std::make_tuple(xx, yy);
+  }
+  default: {
+    assert(false);
+    // unknown / unsupported case
+    return std::make_tuple(dGrid{}, dGrid{});
+  }
+  }
+}
